@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIT (Faculty Integrated Tracker)</title>
     <link href="https://fonts.googleapis.com/css2?family=Della+Respira&display=swap" rel="stylesheet">
-    
+
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
@@ -63,7 +64,11 @@
         }
 
         .status-bar {
-            text-align: right;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
             font-size: 0.85rem;
             color: var(--primary);
             font-weight: bold;
@@ -79,13 +84,13 @@
             border-top: 3px solid var(--primary);
         }
 
-        h2 { 
-            margin-top: 0; 
-            color: var(--primary); 
+        h2 {
+            margin-top: 0;
+            color: var(--primary);
             font-family: 'Della Respira', serif;
-            font-size: 1.4rem; 
-            border-bottom: 2px solid var(--accent); 
-            padding-bottom: 8px; 
+            font-size: 1.4rem;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 8px;
         }
 
         .form-group {
@@ -130,23 +135,24 @@
             background-color: var(--primary-hover);
         }
 
-        .btn-secondary {
-            background-color: #4b5563;
-        }
-        .btn-secondary:hover {
-            background-color: #374151;
-        }
+        .btn-secondary { background-color: #4b5563; }
+        .btn-secondary:hover { background-color: #374151; }
 
-        /* NEW: remove buttons */
+        .btn-link {
+            background: none;
+            color: var(--primary);
+            padding: 0;
+            text-decoration: underline;
+        }
+        .btn-link:hover { background: none; color: var(--primary-hover); }
+
         .btn-danger {
             background-color: var(--danger);
             padding: 5px 10px;
             font-size: 0.8rem;
             flex-shrink: 0;
         }
-        .btn-danger:hover {
-            background-color: #b91c1c;
-        }
+        .btn-danger:hover { background-color: #b91c1c; }
 
         .alert {
             padding: 10px;
@@ -179,6 +185,23 @@
         }
         .schedule-item:last-child { border-bottom: none; }
 
+        .owner-note {
+            display: block;
+            font-size: 0.78rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        .locked { font-size: 0.8rem; color: #6b7280; flex-shrink: 0; }
+        .mine-badge {
+            background: var(--accent);
+            color: #3b2f00;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 1px 7px;
+            border-radius: 99px;
+            margin-left: 6px;
+        }
+
         .prof-header {
             display: flex;
             justify-content: space-between;
@@ -209,6 +232,9 @@
 
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+
+        #authView { max-width: 420px; margin: 0 auto; }
+        #appView { display: none; }
     </style>
 </head>
 <body>
@@ -219,108 +245,136 @@
         <p>FEU Tech Web-based Scheduling System</p>
     </header>
 
-    <div class="status-bar">
-        🟢 Connected to Firebase Realtime Database (Cloud Sync Active)
+    <!-- LOGIN / SIGN UP -->
+    <div id="authView" class="card">
+        <h2 id="authTitle">Sign in</h2>
+        <div class="form-group" id="nameGroup" style="display:none;">
+            <label for="authName">Your Name:</label>
+            <input type="text" id="authName" placeholder="e.g., Mr. Demeke Bayyou">
+        </div>
+        <div class="form-group">
+            <label for="authEmail">Email:</label>
+            <input type="email" id="authEmail" placeholder="name@feutech.edu.ph" autocomplete="username">
+        </div>
+        <div class="form-group">
+            <label for="authPassword">Password:</label>
+            <input type="password" id="authPassword" placeholder="At least 6 characters" autocomplete="current-password"
+                   onkeydown="if(event.key === 'Enter') handleAuth()">
+        </div>
+        <button id="authBtn" onclick="handleAuth()">Sign in</button>
+        <p style="font-size:0.9rem;">
+            <span id="authSwitchText">No account yet?</span>
+            <button class="btn-link" id="authSwitchBtn" onclick="toggleAuthMode()">Create one</button>
+        </p>
+        <div id="authMessage"></div>
     </div>
 
-    <div class="nav-tabs">
-        <button class="active" onclick="switchTab('tab-add', this)">1. Add Professor/Schedule</button>
-        <button onclick="switchTab('tab-absence', this)">2. Record Absence</button>
-        <button onclick="switchTab('tab-view', this)">3. View / Remove Schedules</button>
-    </div>
+    <!-- MAIN APP (visible after login) -->
+    <div id="appView">
+        <div class="status-bar">
+            <span>🟢 Cloud Sync Active · Signed in as <span id="userLabel"></span></span>
+            <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem;" onclick="auth.signOut()">Sign out</button>
+        </div>
 
-    <!-- TAB 1: ADD PROFESSOR & SCHEDULE -->
-    <div id="tab-add" class="tab-content active card">
-        <h2>Add Professor & Schedule Entry</h2>
-        <div class="form-group">
-            <label for="profName">Professor Name:</label>
-            <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou">
+        <div class="nav-tabs">
+            <button class="active" onclick="switchTab('tab-add', this)">1. Add Professor/Schedule</button>
+            <button onclick="switchTab('tab-absence', this)">2. Record Absence</button>
+            <button onclick="switchTab('tab-view', this)">3. View / Remove Schedules</button>
         </div>
-        <div class="form-group">
-            <label for="schedDay">Day:</label>
-            <select id="schedDay">
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                <option value="Sunday">Sunday</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="schedType">Type:</label>
-            <select id="schedType" onchange="toggleSubjectInput()">
-                <option value="class">Class</option>
-                <option value="vacant">Vacant</option>
-            </select>
-        </div>
-        <div class="form-group" id="subjectGroup">
-            <label for="schedSubject">Subject Name:</label>
-            <input type="text" id="schedSubject" placeholder="e.g., Computer Programming 1L">
-        </div>
-        <div class="form-group">
-            <label for="startTime">Start Time (e.g., 7:00 AM, 13:00, or 2:30 PM):</label>
-            <input type="text" id="startTime" placeholder="7:00 AM">
-        </div>
-        <div class="form-group">
-            <label for="endTime">End Time:</label>
-            <input type="text" id="endTime" placeholder="8:30 AM">
-        </div>
-        <button onclick="handleAddSchedule()">Add Schedule Entry</button>
-        <div id="addMessage"></div>
-    </div>
 
-    <!-- TAB 2: RECORD ABSENCE -->
-    <div id="tab-absence" class="tab-content card">
-        <h2>Record Professor Absence & Find Substitutes</h2>
-        <div class="form-group">
-            <label for="absentProfName">Absent Professor Name:</label>
-            <input type="text" id="absentProfName" placeholder="e.g., Mr. Demeke Bayyou">
-        </div>
-        <div class="form-group">
-            <label for="absenceDay">Day of Absence:</label>
-            <select id="absenceDay">
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                <option value="Sunday">Sunday</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="specificTimeCheck" onchange="toggleAbsenceTimeInputs()" style="width:auto;"> 
-                Absent only during a specific time range?
-            </label>
-        </div>
-        <div id="absenceTimeSection" style="display:none;">
+        <!-- TAB 1: ADD PROFESSOR & SCHEDULE -->
+        <div id="tab-add" class="tab-content active card">
+            <h2>Add Professor & Schedule Entry</h2>
             <div class="form-group">
-                <label for="absenceStart">Absence Start Time:</label>
-                <input type="text" id="absenceStart" placeholder="9:00 AM">
+                <label for="profName">Professor Name:</label>
+                <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou">
             </div>
             <div class="form-group">
-                <label for="absenceEnd">Absence End Time:</label>
-                <input type="text" id="absenceEnd" placeholder="10:30 AM">
+                <label for="schedDay">Day:</label>
+                <select id="schedDay">
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                </select>
             </div>
             <div class="form-group">
-                <label for="absenceSubject">Subject Affected:</label>
-                <input type="text" id="absenceSubject" placeholder="Computer Programming 1L">
+                <label for="schedType">Type:</label>
+                <select id="schedType" onchange="toggleSubjectInput()">
+                    <option value="class">Class</option>
+                    <option value="vacant">Vacant</option>
+                </select>
             </div>
+            <div class="form-group" id="subjectGroup">
+                <label for="schedSubject">Subject Name:</label>
+                <input type="text" id="schedSubject" placeholder="e.g., Computer Programming 1L">
+            </div>
+            <div class="form-group">
+                <label for="startTime">Start Time (e.g., 7:00 AM, 13:00, or 2:30 PM):</label>
+                <input type="text" id="startTime" placeholder="7:00 AM">
+            </div>
+            <div class="form-group">
+                <label for="endTime">End Time:</label>
+                <input type="text" id="endTime" placeholder="8:30 AM">
+            </div>
+            <button onclick="handleAddSchedule()">Add Schedule Entry</button>
+            <div id="addMessage"></div>
         </div>
-        <button onclick="handleRecordAbsence()">Check Substitute Professors</button>
-        <div id="absenceReport" class="output-box" style="display:none;"></div>
-    </div>
 
-    <!-- TAB 3: VIEW / REMOVE SCHEDULES -->
-    <div id="tab-view" class="tab-content card">
-        <h2>All Professor Schedules</h2>
-        <button onclick="renderAllSchedules()" class="btn-secondary">Refresh Schedules</button>
-        <div id="removeMessage"></div>
-        <div id="allSchedulesContainer" class="schedule-list">
-            <p>No professors added yet.</p>
+        <!-- TAB 2: RECORD ABSENCE -->
+        <div id="tab-absence" class="tab-content card">
+            <h2>Record Professor Absence & Find Substitutes</h2>
+            <div class="form-group">
+                <label for="absentProfName">Absent Professor Name:</label>
+                <input type="text" id="absentProfName" placeholder="e.g., Mr. Demeke Bayyou">
+            </div>
+            <div class="form-group">
+                <label for="absenceDay">Day of Absence:</label>
+                <select id="absenceDay">
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="specificTimeCheck" onchange="toggleAbsenceTimeInputs()" style="width:auto;">
+                    Absent only during a specific time range?
+                </label>
+            </div>
+            <div id="absenceTimeSection" style="display:none;">
+                <div class="form-group">
+                    <label for="absenceStart">Absence Start Time:</label>
+                    <input type="text" id="absenceStart" placeholder="9:00 AM">
+                </div>
+                <div class="form-group">
+                    <label for="absenceEnd">Absence End Time:</label>
+                    <input type="text" id="absenceEnd" placeholder="10:30 AM">
+                </div>
+                <div class="form-group">
+                    <label for="absenceSubject">Subject Affected:</label>
+                    <input type="text" id="absenceSubject" placeholder="Computer Programming 1L">
+                </div>
+            </div>
+            <button onclick="handleRecordAbsence()">Check Substitute Professors</button>
+            <div id="absenceReport" class="output-box" style="display:none;"></div>
+        </div>
+
+        <!-- TAB 3: VIEW / REMOVE SCHEDULES -->
+        <div id="tab-view" class="tab-content card">
+            <h2>All Professor Schedules</h2>
+            <button onclick="renderAllSchedules()" class="btn-secondary">Refresh Schedules</button>
+            <div id="removeMessage"></div>
+            <div id="allSchedulesContainer" class="schedule-list">
+                <p>No professors added yet.</p>
+            </div>
         </div>
     </div>
 </div>
@@ -340,42 +394,133 @@
 
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+    const auth = firebase.auth();
+    const profRef = database.ref('professors');
 
-    let professors = [];
+    let professors = [];   // [{id, name, ownerUid, ownerName, schedules:[{id, day, startTime, ...}]}]
+    let currentUser = null;
+    let chatRefs = [];     // chat listeners to clean up on re-render
 
-    // Real-time synchronization listener with Firebase Database
-    database.ref('professors').on('value', (snapshot) => {
-        let data = snapshot.val();
-        professors = data ? data : [];
-        // Firebase drops empty arrays, so make sure every professor has a schedules list
-        professors = professors.filter(p => p).map(p => {
-            p.schedules = p.schedules || [];
-            return p;
-        });
-        if (document.getElementById('tab-view').classList.contains('active')) {
-            renderAllSchedules();
-        }
-    });
+    // ---------- helpers ----------
+    function trim(str) { return str.trim(); }
+    function toLower(str) { return str.toLowerCase(); }
 
-    function saveProfessorsToCloud() {
-        database.ref('professors').set(professors);
-    }
-
-    function trim(str) {
-        return str.trim();
-    }
-
-    function toLower(str) {
-        return str.toLowerCase();
-    }
-
-    // Escape text before putting it into the page
     function esc(str) {
         return String(str).replace(/[&<>"']/g, c => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }[c]));
     }
 
+    function myName() {
+        if (!currentUser) return '';
+        return currentUser.displayName || (currentUser.email || 'User').split('@')[0];
+    }
+
+    function isMine(ownerUid) {
+        return !!currentUser && ownerUid === currentUser.uid;
+    }
+
+    // Safe database key for a professor name (same name = same key)
+    function profKey(name) {
+        let clean = toLower(trim(name)).replace(/\s+/g, ' ');
+        return Array.from(clean).map(ch =>
+            /[a-z0-9]/.test(ch) ? ch : '_' + ch.codePointAt(0).toString(16)
+        ).join('');
+    }
+
+    function showMessage(elementId, text, type) {
+        let el = document.getElementById(elementId);
+        el.className = `alert alert-${type}`;
+        el.innerText = text;
+        setTimeout(() => { el.className = ''; el.innerText = ''; }, 5000);
+    }
+
+    function friendlyError(err) {
+        if (err && /permission_denied/i.test(err.message || err.code || '')) {
+            return 'You can only change entries that you created.';
+        }
+        return (err && err.message) ? err.message : 'Something went wrong.';
+    }
+
+    // ---------- AUTH ----------
+    let signUpMode = false;
+
+    function toggleAuthMode() {
+        signUpMode = !signUpMode;
+        document.getElementById('authTitle').innerText = signUpMode ? 'Create account' : 'Sign in';
+        document.getElementById('authBtn').innerText = signUpMode ? 'Create account' : 'Sign in';
+        document.getElementById('nameGroup').style.display = signUpMode ? 'block' : 'none';
+        document.getElementById('authSwitchText').innerText = signUpMode ? 'Already have an account?' : 'No account yet?';
+        document.getElementById('authSwitchBtn').innerText = signUpMode ? 'Sign in' : 'Create one';
+        document.getElementById('authPassword').autocomplete = signUpMode ? 'new-password' : 'current-password';
+    }
+
+    function handleAuth() {
+        let email = trim(document.getElementById('authEmail').value);
+        let password = document.getElementById('authPassword').value;
+        let name = trim(document.getElementById('authName').value);
+
+        if (!email || !password) {
+            showMessage('authMessage', '❌ Enter your email and password.', 'error');
+            return;
+        }
+
+        if (signUpMode) {
+            if (!name) {
+                showMessage('authMessage', '❌ Enter your name. It is shown next to the schedules you add.', 'error');
+                return;
+            }
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(cred => cred.user.updateProfile({ displayName: name }))
+                .then(() => {
+                    currentUser = auth.currentUser;
+                    document.getElementById('userLabel').innerText = myName();
+                    renderAllSchedules();
+                })
+                .catch(err => showMessage('authMessage', '❌ ' + err.message, 'error'));
+        } else {
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(err => showMessage('authMessage', '❌ ' + err.message, 'error'));
+        }
+    }
+
+    // Convert the database snapshot into a plain array
+    function handleProfessorsSnapshot(snapshot) {
+        let data = snapshot.val() || {};
+        professors = Object.entries(data)
+            .filter(([id, p]) => p && p.name)
+            .map(([id, p]) => ({
+                id: id,
+                name: p.name,
+                ownerUid: p.ownerUid || null,
+                ownerName: p.ownerName || 'Unknown',
+                schedules: Object.entries(p.schedules || {}).map(([sid, s]) => ({ id: sid, ...s }))
+            }));
+        renderAllSchedules();
+    }
+
+    auth.onAuthStateChanged(user => {
+        currentUser = user;
+        if (user) {
+            document.getElementById('authView').style.display = 'none';
+            document.getElementById('appView').style.display = 'block';
+            document.getElementById('userLabel').innerText = myName();
+            profRef.on('value', handleProfessorsSnapshot, err => {
+                console.error(err);
+                document.getElementById('allSchedulesContainer').innerHTML =
+                    '<p style="color:var(--danger)">❌ Could not load schedules: ' + esc(err.message) + '</p>';
+            });
+        } else {
+            profRef.off('value');
+            clearChatListeners();
+            professors = [];
+            document.getElementById('appView').style.display = 'none';
+            document.getElementById('authView').style.display = 'block';
+            document.getElementById('authPassword').value = '';
+        }
+    });
+
+    // ---------- TIME HELPERS ----------
     function convertTime(input) {
         input = trim(input);
         let upper = input.toUpperCase();
@@ -427,10 +572,11 @@
     }
 
     function findProfessorIndex(name) {
-        let cleanName = toLower(trim(name));
-        return professors.findIndex(p => toLower(p.name) === cleanName);
+        let cleanName = toLower(trim(name)).replace(/\s+/g, ' ');
+        return professors.findIndex(p => toLower(p.name).replace(/\s+/g, ' ') === cleanName);
     }
 
+    // ---------- UI ----------
     function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-tabs button').forEach(el => el.classList.remove('active'));
@@ -449,116 +595,144 @@
         document.getElementById('absenceTimeSection').style.display = isChecked ? 'block' : 'none';
     }
 
-    function showMessage(elementId, text, type) {
-        let el = document.getElementById(elementId);
-        el.className = `alert alert-${type}`;
-        el.innerText = text;
-        setTimeout(() => { el.className = ''; el.innerText = ''; }, 5000);
-    }
-
+    // ---------- ADD SCHEDULE ----------
     function handleAddSchedule() {
-        let name = trim(document.getElementById('profName').value);
+        if (!currentUser) return;
+
+        let name = trim(document.getElementById('profName').value).replace(/\s+/g, ' ');
         let day = document.getElementById('schedDay').value;
         let type = document.getElementById('schedType').value;
         let subject = trim(document.getElementById('schedSubject').value);
-        let startTimeStr = document.getElementById('startTime').value;
-        let endTimeStr = document.getElementById('endTime').value;
+        let startTime = convertTime(document.getElementById('startTime').value);
+        let endTime = convertTime(document.getElementById('endTime').value);
 
         if (!name) {
             showMessage('addMessage', '❌ Professor name cannot be empty.', 'error');
             return;
         }
-
-        let startTime = convertTime(startTimeStr);
-        let endTime = convertTime(endTimeStr);
-
         if (startTime === -1 || endTime === -1) {
             showMessage('addMessage', '❌ Invalid time format. Examples: 7:00 AM, 13:00, or 2:30 PM.', 'error');
             return;
         }
-
         if (endTime <= startTime) {
             showMessage('addMessage', '❌ Ending time must be later than starting time.', 'error');
             return;
         }
-
         if (type === 'class' && !subject) {
             showMessage('addMessage', '❌ Subject cannot be empty for classes.', 'error');
             return;
         }
 
         let profIndex = findProfessorIndex(name);
-        let currentProf;
+        let existing = profIndex !== -1 ? professors[profIndex] : null;
 
-        if (profIndex !== -1) {
-            currentProf = professors[profIndex];
-        } else {
-            currentProf = { name: name, schedules: [] };
-            professors.push(currentProf);
+        if (existing) {
+            let conflict = existing.schedules.some(sch =>
+                sch.day === day && timeOverlaps(sch.startTime, sch.endTime, startTime, endTime)
+            );
+            if (conflict) {
+                showMessage('addMessage', `❌ Error: Time slot overlaps with an existing schedule entry on ${day}!`, 'error');
+                return;
+            }
         }
 
-        let conflict = currentProf.schedules.some(sch => 
-            sch.day === day && timeOverlaps(sch.startTime, sch.endTime, startTime, endTime)
-        );
-
-        if (conflict) {
-            // Undo the new professor if the very first entry failed
-            if (profIndex === -1) professors.pop();
-            showMessage('addMessage', `❌ Error: Time slot overlaps with an existing schedule entry on ${day}!`, 'error');
-            return;
-        }
-
-        currentProf.schedules.push({
+        // Every schedule remembers who created it
+        let newSchedule = {
             day: day,
             startTime: startTime,
             endTime: endTime,
             isClass: type === 'class',
-            subject: type === 'class' ? subject : 'Vacant'
-        });
+            subject: type === 'class' ? subject : 'Vacant',
+            ownerUid: currentUser.uid,
+            ownerName: myName()
+        };
 
-        saveProfessorsToCloud();
-        showMessage('addMessage', '✅ Schedule entry added & saved to Firebase Cloud!', 'success');
-        document.getElementById('startTime').value = '';
-        document.getElementById('endTime').value = '';
-        document.getElementById('schedSubject').value = '';
+        let request;
+        if (existing) {
+            request = database.ref('professors/' + existing.id + '/schedules').push(newSchedule);
+        } else {
+            // New professor profile: the creator becomes the profile owner
+            let id = profKey(name);
+            let schedId = database.ref('professors/' + id + '/schedules').push().key;
+            request = database.ref('professors/' + id).set({
+                name: name,
+                ownerUid: currentUser.uid,
+                ownerName: myName(),
+                schedules: { [schedId]: newSchedule }
+            });
+        }
+
+        request.then(() => {
+            showMessage('addMessage', '✅ Schedule entry added & saved to Firebase Cloud!', 'success');
+            document.getElementById('startTime').value = '';
+            document.getElementById('endTime').value = '';
+            document.getElementById('schedSubject').value = '';
+        }).catch(err => showMessage('addMessage', '❌ ' + friendlyError(err), 'error'));
     }
 
-    // --- NEW: REMOVE A SINGLE SCHEDULE ENTRY ---
-    function removeSchedule(profIdx, schedIdx) {
-        let prof = professors[profIdx];
+    // ---------- REMOVE (OWNER ONLY) ----------
+    function removeSchedule(profId, schedId) {
+        let prof = professors.find(p => p.id === profId);
         if (!prof) return;
-        let sch = prof.schedules[schedIdx];
+        let sch = prof.schedules.find(s => s.id === schedId);
         if (!sch) return;
+
+        if (!isMine(sch.ownerUid)) {
+            showMessage('removeMessage', '❌ You can only remove schedules that you added.', 'error');
+            return;
+        }
 
         let label = sch.isClass ? sch.subject : 'Vacant';
         if (!confirm(`Remove this entry for ${prof.name}?\n\n${sch.day} | ${displayTime(sch.startTime)} - ${displayTime(sch.endTime)} | ${label}`)) {
             return;
         }
 
-        prof.schedules.splice(schedIdx, 1);
+        let othersRemain = prof.schedules.some(s => s.id !== schedId);
 
-        // If that was the last entry, offer to delete the whole profile
-        if (prof.schedules.length === 0) {
-            if (confirm(`All schedules for ${prof.name} have been removed.\n\nDelete this professor profile entirely?`)) {
-                professors.splice(profIdx, 1);
-            }
-        }
-
-        saveProfessorsToCloud();
-        renderAllSchedules();
-        showMessage('removeMessage', '🗑️ Schedule entry removed & synced to Firebase Cloud.', 'success');
+        database.ref(`professors/${profId}/schedules/${schedId}`).remove()
+            .then(() => {
+                showMessage('removeMessage', '🗑️ Schedule entry removed & synced to Firebase Cloud.', 'success');
+                // Offer to delete the profile if it is now empty and belongs to this user
+                if (!othersRemain && isMine(prof.ownerUid)) {
+                    if (confirm(`All schedules for ${prof.name} have been removed.\n\nDelete this professor profile entirely?`)) {
+                        return database.ref('professors/' + profId).remove();
+                    }
+                }
+            })
+            .catch(err => showMessage('removeMessage', '❌ ' + friendlyError(err), 'error'));
     }
 
-    // --- NEW: REMOVE A WHOLE PROFESSOR ---
-    function removeProfessor(profIdx) {
-        let prof = professors[profIdx];
+    function canDeleteProfessor(prof) {
+        return isMine(prof.ownerUid) && prof.schedules.every(s => isMine(s.ownerUid));
+    }
+
+    function removeProfessor(profId) {
+        let prof = professors.find(p => p.id === profId);
         if (!prof) return;
+
+        if (!canDeleteProfessor(prof)) {
+            showMessage('removeMessage', '❌ Only the creator of a professor profile can delete it, and only when every schedule on it is theirs.', 'error');
+            return;
+        }
         if (!confirm(`Delete ${prof.name} and all of their schedules?`)) return;
 
-        professors.splice(profIdx, 1);
-        saveProfessorsToCloud();
-        renderAllSchedules();
-        showMessage('removeMessage', '🗑️ Professor profile deleted & synced to Firebase Cloud.', 'success');
+        // Remove the schedules first, then the profile itself
+        let nulls = {};
+        prof.schedules.forEach(s => { nulls[s.id] = null; });
+
+        let step = prof.schedules.length
+            ? database.ref(`professors/${profId}/schedules`).update(nulls)
+            : Promise.resolve();
+
+        step.then(() => database.ref('professors/' + profId).remove())
+            .then(() => showMessage('removeMessage', '🗑️ Professor profile deleted & synced to Firebase Cloud.', 'success'))
+            .catch(err => showMessage('removeMessage', '❌ ' + friendlyError(err), 'error'));
+    }
+
+    // ---------- ABSENCE + CHAT ----------
+    function clearChatListeners() {
+        chatRefs.forEach(r => r.off());
+        chatRefs = [];
     }
 
     function handleRecordAbsence() {
@@ -566,6 +740,8 @@
         let day = document.getElementById('absenceDay').value;
         let isSpecific = document.getElementById('specificTimeCheck').checked;
         let reportBox = document.getElementById('absenceReport');
+
+        clearChatListeners();
 
         let profIndex = findProfessorIndex(name);
         if (profIndex === -1) {
@@ -603,6 +779,7 @@
         }
 
         let html = `<h3>Absence Report: ${esc(absentProf.name)}</h3>`;
+        let chatsToAttach = [];
 
         absenceClasses.forEach(absence => {
             html += `<hr><p><strong>Class needing substitute:</strong> ${esc(absence.subject)} (${absence.day}, ${displayTime(absence.startTime)} - ${displayTime(absence.endTime)})</p>`;
@@ -611,28 +788,22 @@
             professors.forEach((p, idx) => {
                 if (idx === profIndex) return;
 
-                let hasConflict = false;
+                let hasConflict = p.schedules.some(sch =>
+                    sch.day === absence.day && sch.isClass &&
+                    timeOverlaps(sch.startTime, sch.endTime, absence.startTime, absence.endTime)
+                );
 
-                p.schedules.forEach(sch => {
-                    if (sch.day !== absence.day) return;
-                    if (sch.isClass && timeOverlaps(sch.startTime, sch.endTime, absence.startTime, absence.endTime)) {
-                        hasConflict = true;
-                    }
-                });
-
-                if (!hasConflict) {
-                    available.push(p.name);
-                }
+                if (!hasConflict) available.push(p.name);
             });
 
             if (available.length === 0) {
                 html += `<p style="color:var(--danger)">❌ No available substitute professor found for this slot.</p>`;
             } else {
                 html += `<p style="color:var(--success)">✅ <strong>Available Professors:</strong> ${available.map(esc).join(', ')}</p>`;
-                
-                // --- FIREBASE CLOUD CHAT ---
+
                 let chatId = `chat_${absence.day}_${absence.startTime}_${absence.endTime}`.replace(/[:\.]/g, '');
-                
+                chatsToAttach.push(chatId);
+
                 html += `
                     <div style="margin-top: 15px; background: #fff; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; border-left: 4px solid var(--accent);">
                         <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: var(--primary);">💬 Substitute Coordination Chat (Cloud Live)</h4>
@@ -640,78 +811,87 @@
                             <p style="color: #6b7280; margin: 0;">Loading messages...</p>
                         </div>
                         <div style="display: flex; gap: 5px;">
-                            <input type="text" id="${chatId}_sender" placeholder="Your Name" style="width: 30%; padding: 6px; font-size: 0.85rem;">
-                            <input type="text" id="${chatId}_input" placeholder="Type message (e.g., Can you take this class?)" style="flex: 1; padding: 6px; font-size: 0.85rem;" onkeydown="if(event.key === 'Enter') sendSubstituteMessage('${chatId}')">
+                            <input type="text" id="${chatId}_input" placeholder="Message as ${esc(myName())} (e.g., Can you take this class?)" style="flex: 1; padding: 6px; font-size: 0.85rem;" onkeydown="if(event.key === 'Enter') sendSubstituteMessage('${chatId}')">
                             <button onclick="sendSubstituteMessage('${chatId}')" style="padding: 6px 10px; font-size: 0.85rem; background-color: var(--primary);">Send</button>
                         </div>
                     </div>
                 `;
-
-                // Attach real-time listener for this specific slot chat
-                database.ref('chats/' + chatId).on('value', (snapshot) => {
-                    let msgData = snapshot.val();
-                    let messages = msgData ? Object.values(msgData) : [];
-                    let msgBox = document.getElementById(`${chatId}_messages`);
-                    if (msgBox) {
-                        if (messages.length === 0) {
-                            msgBox.innerHTML = '<p style="color: #6b7280; margin: 0;">No messages yet. Send a note to coordinate coverage.</p>';
-                        } else {
-                            msgBox.innerHTML = messages.map(m => `<div><strong>${esc(m.sender)}:</strong> ${esc(m.text)}</div>`).join('');
-                            msgBox.scrollTop = msgBox.scrollHeight;
-                        }
-                    }
-                });
             }
         });
 
         reportBox.style.display = 'block';
         reportBox.innerHTML = html;
+
+        // Attach live chat listeners after the HTML is on the page
+        chatsToAttach.forEach(chatId => {
+            let ref = database.ref('chats/' + chatId);
+            chatRefs.push(ref);
+            ref.on('value', snapshot => {
+                let msgData = snapshot.val();
+                let messages = msgData ? Object.values(msgData) : [];
+                let msgBox = document.getElementById(`${chatId}_messages`);
+                if (!msgBox) return;
+                if (messages.length === 0) {
+                    msgBox.innerHTML = '<p style="color: #6b7280; margin: 0;">No messages yet. Send a note to coordinate coverage.</p>';
+                } else {
+                    msgBox.innerHTML = messages.map(m => `<div><strong>${esc(m.sender)}:</strong> ${esc(m.text)}</div>`).join('');
+                    msgBox.scrollTop = msgBox.scrollHeight;
+                }
+            });
+        });
     }
 
     function sendSubstituteMessage(chatId) {
-        let senderInput = document.getElementById(`${chatId}_sender`);
+        if (!currentUser) return;
         let msgInput = document.getElementById(`${chatId}_input`);
-        
-        let sender = trim(senderInput.value);
         let text = trim(msgInput.value);
+        if (!text) return;
 
-        if (!sender || !text) {
-            alert("Please enter your name and a message.");
-            return;
-        }
-
-        // Push message to Firebase Realtime Database
         database.ref('chats/' + chatId).push({
-            sender: sender,
+            sender: myName(),
+            uid: currentUser.uid,
             text: text,
             timestamp: Date.now()
-        });
-
-        msgInput.value = '';
+        }).then(() => { msgInput.value = ''; })
+          .catch(err => alert('❌ ' + friendlyError(err)));
     }
 
+    // ---------- VIEW ALL ----------
     function renderAllSchedules() {
         let container = document.getElementById('allSchedulesContainer');
+        if (!currentUser) return;
+
         if (professors.length === 0) {
             container.innerHTML = '<p>No professors have been added yet.</p>';
             return;
         }
 
         let html = '';
-        professors.forEach((p, pIdx) => {
+        professors.forEach(p => {
+            let deleteBtn = canDeleteProfessor(p)
+                ? `<button class="btn-danger" onclick="removeProfessor('${p.id}')">Delete Professor</button>`
+                : '';
+            let mine = isMine(p.ownerUid) ? '<span class="mine-badge">Your profile</span>' : '';
+
             html += `<div style="margin-bottom: 15px;">
                 <div class="prof-header">
-                    <strong>Professor: ${esc(p.name)}</strong>
-                    <button class="btn-danger" onclick="removeProfessor(${pIdx})">Delete Professor</button>
+                    <span><strong>Professor: ${esc(p.name)}</strong>${mine}
+                        <span class="owner-note">Profile created by ${esc(p.ownerName)}</span></span>
+                    ${deleteBtn}
                 </div>`;
+
             if (p.schedules.length === 0) {
                 html += `<div class="schedule-item">No schedule available.</div>`;
             } else {
-                p.schedules.forEach((sch, sIdx) => {
+                p.schedules.forEach(sch => {
                     let typeLabel = sch.isClass ? esc(sch.subject) : 'VACANT';
+                    let action = isMine(sch.ownerUid)
+                        ? `<button class="btn-danger" onclick="removeSchedule('${p.id}', '${sch.id}')">Remove</button>`
+                        : `<span class="locked">🔒 Added by ${esc(sch.ownerName || 'another user')}</span>`;
                     html += `<div class="schedule-item">
-                        <span>${sch.day} | ${displayTime(sch.startTime)} - ${displayTime(sch.endTime)} | ${typeLabel}</span>
-                        <button class="btn-danger" onclick="removeSchedule(${pIdx}, ${sIdx})">Remove</button>
+                        <span>${sch.day} | ${displayTime(sch.startTime)} - ${displayTime(sch.endTime)} | ${typeLabel}
+                            ${isMine(sch.ownerUid) ? '<span class="owner-note">Added by you</span>' : ''}</span>
+                        ${action}
                     </div>`;
                 });
             }
