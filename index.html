@@ -137,6 +137,17 @@
             background-color: #374151;
         }
 
+        /* NEW: remove buttons */
+        .btn-danger {
+            background-color: var(--danger);
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+
         .alert {
             padding: 10px;
             border-radius: 6px;
@@ -153,16 +164,28 @@
             border-radius: 6px;
             padding: 15px;
             margin-top: 10px;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }
 
         .schedule-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
             padding: 8px;
             border-bottom: 1px solid var(--border-color);
             font-size: 0.9rem;
         }
         .schedule-item:last-child { border-bottom: none; }
+
+        .prof-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
 
         .nav-tabs {
             display: flex;
@@ -201,9 +224,9 @@
     </div>
 
     <div class="nav-tabs">
-        <button class="active" onclick="switchTab('tab-add')">1. Add Professor/Schedule</button>
-        <button onclick="switchTab('tab-absence')">2. Record Absence</button>
-        <button onclick="switchTab('tab-view')">3. View All Schedules</button>
+        <button class="active" onclick="switchTab('tab-add', this)">1. Add Professor/Schedule</button>
+        <button onclick="switchTab('tab-absence', this)">2. Record Absence</button>
+        <button onclick="switchTab('tab-view', this)">3. View / Remove Schedules</button>
     </div>
 
     <!-- TAB 1: ADD PROFESSOR & SCHEDULE -->
@@ -211,7 +234,7 @@
         <h2>Add Professor & Schedule Entry</h2>
         <div class="form-group">
             <label for="profName">Professor Name:</label>
-            <input type="text" id="profName" placeholder="e.g., Dr. Smith">
+            <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou">
         </div>
         <div class="form-group">
             <label for="schedDay">Day:</label>
@@ -253,7 +276,7 @@
         <h2>Record Professor Absence & Find Substitutes</h2>
         <div class="form-group">
             <label for="absentProfName">Absent Professor Name:</label>
-            <input type="text" id="absentProfName" placeholder="e.g., Dr. Smith">
+            <input type="text" id="absentProfName" placeholder="e.g., Mr. Demeke Bayyou">
         </div>
         <div class="form-group">
             <label for="absenceDay">Day of Absence:</label>
@@ -284,17 +307,18 @@
             </div>
             <div class="form-group">
                 <label for="absenceSubject">Subject Affected:</label>
-                <input type="text" id="absenceSubject" placeholder="Math 101">
+                <input type="text" id="absenceSubject" placeholder="Computer Programming 1L">
             </div>
         </div>
         <button onclick="handleRecordAbsence()">Check Substitute Professors</button>
         <div id="absenceReport" class="output-box" style="display:none;"></div>
     </div>
 
-    <!-- TAB 3: VIEW ALL SCHEDULES -->
+    <!-- TAB 3: VIEW / REMOVE SCHEDULES -->
     <div id="tab-view" class="tab-content card">
         <h2>All Professor Schedules</h2>
         <button onclick="renderAllSchedules()" class="btn-secondary">Refresh Schedules</button>
+        <div id="removeMessage"></div>
         <div id="allSchedulesContainer" class="schedule-list">
             <p>No professors added yet.</p>
         </div>
@@ -323,6 +347,11 @@
     database.ref('professors').on('value', (snapshot) => {
         let data = snapshot.val();
         professors = data ? data : [];
+        // Firebase drops empty arrays, so make sure every professor has a schedules list
+        professors = professors.filter(p => p).map(p => {
+            p.schedules = p.schedules || [];
+            return p;
+        });
         if (document.getElementById('tab-view').classList.contains('active')) {
             renderAllSchedules();
         }
@@ -338,6 +367,13 @@
 
     function toLower(str) {
         return str.toLowerCase();
+    }
+
+    // Escape text before putting it into the page
+    function esc(str) {
+        return String(str).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
     }
 
     function convertTime(input) {
@@ -395,11 +431,11 @@
         return professors.findIndex(p => toLower(p.name) === cleanName);
     }
 
-    function switchTab(tabId) {
+    function switchTab(tabId, btn) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.nav-tabs button').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
-        event.currentTarget.classList.add('active');
+        btn.classList.add('active');
         if (tabId === 'tab-view') renderAllSchedules();
     }
 
@@ -466,6 +502,8 @@
         );
 
         if (conflict) {
+            // Undo the new professor if the very first entry failed
+            if (profIndex === -1) professors.pop();
             showMessage('addMessage', `❌ Error: Time slot overlaps with an existing schedule entry on ${day}!`, 'error');
             return;
         }
@@ -483,6 +521,44 @@
         document.getElementById('startTime').value = '';
         document.getElementById('endTime').value = '';
         document.getElementById('schedSubject').value = '';
+    }
+
+    // --- NEW: REMOVE A SINGLE SCHEDULE ENTRY ---
+    function removeSchedule(profIdx, schedIdx) {
+        let prof = professors[profIdx];
+        if (!prof) return;
+        let sch = prof.schedules[schedIdx];
+        if (!sch) return;
+
+        let label = sch.isClass ? sch.subject : 'Vacant';
+        if (!confirm(`Remove this entry for ${prof.name}?\n\n${sch.day} | ${displayTime(sch.startTime)} - ${displayTime(sch.endTime)} | ${label}`)) {
+            return;
+        }
+
+        prof.schedules.splice(schedIdx, 1);
+
+        // If that was the last entry, offer to delete the whole profile
+        if (prof.schedules.length === 0) {
+            if (confirm(`All schedules for ${prof.name} have been removed.\n\nDelete this professor profile entirely?`)) {
+                professors.splice(profIdx, 1);
+            }
+        }
+
+        saveProfessorsToCloud();
+        renderAllSchedules();
+        showMessage('removeMessage', '🗑️ Schedule entry removed & synced to Firebase Cloud.', 'success');
+    }
+
+    // --- NEW: REMOVE A WHOLE PROFESSOR ---
+    function removeProfessor(profIdx) {
+        let prof = professors[profIdx];
+        if (!prof) return;
+        if (!confirm(`Delete ${prof.name} and all of their schedules?`)) return;
+
+        professors.splice(profIdx, 1);
+        saveProfessorsToCloud();
+        renderAllSchedules();
+        showMessage('removeMessage', '🗑️ Professor profile deleted & synced to Firebase Cloud.', 'success');
     }
 
     function handleRecordAbsence() {
@@ -522,14 +598,14 @@
 
         if (absenceClasses.length === 0) {
             reportBox.style.display = 'block';
-            reportBox.innerHTML = `<p class="alert alert-info">ℹ️ No scheduled classes found for ${absentProf.name} on ${day}.</p>`;
+            reportBox.innerHTML = `<p class="alert alert-info">ℹ️ No scheduled classes found for ${esc(absentProf.name)} on ${day}.</p>`;
             return;
         }
 
-        let html = `<h3>Absence Report: ${absentProf.name}</h3>`;
+        let html = `<h3>Absence Report: ${esc(absentProf.name)}</h3>`;
 
         absenceClasses.forEach(absence => {
-            html += `<hr><p><strong>Class needing substitute:</strong> ${absence.subject} (${absence.day}, ${displayTime(absence.startTime)} - ${displayTime(absence.endTime)})</p>`;
+            html += `<hr><p><strong>Class needing substitute:</strong> ${esc(absence.subject)} (${absence.day}, ${displayTime(absence.startTime)} - ${displayTime(absence.endTime)})</p>`;
 
             let available = [];
             professors.forEach((p, idx) => {
@@ -552,7 +628,7 @@
             if (available.length === 0) {
                 html += `<p style="color:var(--danger)">❌ No available substitute professor found for this slot.</p>`;
             } else {
-                html += `<p style="color:var(--success)">✅ <strong>Available Professors:</strong> ${available.join(', ')}</p>`;
+                html += `<p style="color:var(--success)">✅ <strong>Available Professors:</strong> ${available.map(esc).join(', ')}</p>`;
                 
                 // --- FIREBASE CLOUD CHAT ---
                 let chatId = `chat_${absence.day}_${absence.startTime}_${absence.endTime}`.replace(/[:\.]/g, '');
@@ -580,7 +656,7 @@
                         if (messages.length === 0) {
                             msgBox.innerHTML = '<p style="color: #6b7280; margin: 0;">No messages yet. Send a note to coordinate coverage.</p>';
                         } else {
-                            msgBox.innerHTML = messages.map(m => `<div><strong>${m.sender}:</strong> ${m.text}</div>`).join('');
+                            msgBox.innerHTML = messages.map(m => `<div><strong>${esc(m.sender)}:</strong> ${esc(m.text)}</div>`).join('');
                             msgBox.scrollTop = msgBox.scrollHeight;
                         }
                     }
@@ -622,14 +698,21 @@
         }
 
         let html = '';
-        professors.forEach(p => {
-            html += `<div style="margin-bottom: 15px;"><strong>Professor: ${p.name}</strong>`;
+        professors.forEach((p, pIdx) => {
+            html += `<div style="margin-bottom: 15px;">
+                <div class="prof-header">
+                    <strong>Professor: ${esc(p.name)}</strong>
+                    <button class="btn-danger" onclick="removeProfessor(${pIdx})">Delete Professor</button>
+                </div>`;
             if (p.schedules.length === 0) {
                 html += `<div class="schedule-item">No schedule available.</div>`;
             } else {
-                p.schedules.forEach(sch => {
-                    let typeLabel = sch.isClass ? sch.subject : 'VACANT';
-                    html += `<div class="schedule-item">${sch.day} | ${displayTime(sch.startTime)} - ${displayTime(sch.endTime)} | ${typeLabel}</div>`;
+                p.schedules.forEach((sch, sIdx) => {
+                    let typeLabel = sch.isClass ? esc(sch.subject) : 'VACANT';
+                    html += `<div class="schedule-item">
+                        <span>${sch.day} | ${displayTime(sch.startTime)} - ${displayTime(sch.endTime)} | ${typeLabel}</span>
+                        <button class="btn-danger" onclick="removeSchedule(${pIdx}, ${sIdx})">Remove</button>
+                    </div>`;
                 });
             }
             html += `</div>`;
