@@ -1,387 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FSF (Faculty Substitute Finder)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Della+Respira&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FSF (Faculty Substitute Finder)</title>
+<link href="https://fonts.googleapis.com/css2?family=Della+Respira&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --forest:#003d26; --primary:#005A36; --primary-hover:#004227; --accent:#FFC72C; --accent-hover:#e0ac20;
+  --paper:#edf0e8; --card:#fbfcf8; --field:#e6ebe0; --ink:#14201a; --muted:#5d6b62; --line:#d5dccf;
+  --danger:#c62828; --success:#16794a;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--paper);color:var(--ink);padding:16px 16px 48px}
+.container{max-width:920px;margin:0 auto}
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+/* Masthead: a timetable made of bars */
+header{position:relative;overflow:hidden;background:var(--forest);color:#fff;border-radius:28px;padding:34px 32px 56px;margin-bottom:-28px}
+header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:22px;
+  background:repeating-linear-gradient(90deg,var(--accent) 0 38px,transparent 38px 46px,rgba(255,199,44,.45) 46px 70px,transparent 70px 78px,rgba(255,199,44,.18) 78px 96px,transparent 96px 104px)}
+header h1{margin:0;font-family:'Della Respira',serif;font-weight:400;font-size:clamp(1.9rem,5vw,3rem);line-height:1.05;color:var(--accent);max-width:12em}
+header p{margin:10px 0 0;color:#cfe3d7;font-size:.95rem}
 
-    <style>
-        :root {
-            --primary: #005A36;          /* FEU Forest Green */
-            --primary-hover: #004227;    /* Darker Forest Green */
-            --accent: #FFC72C;           /* FEU Gold */
-            --accent-hover: #e0ac20;     /* Darker Gold */
-            --bg-color: #f4f6f4;
-            --card-bg: #ffffff;
-            --text-color: #1f2937;
-            --border-color: #d1d5db;
-            --danger: #dc2626;
-            --success: #16a34a;
-        }
+.panel{position:relative;background:var(--card);border-radius:28px;padding:28px;box-shadow:0 18px 40px -22px rgba(0,40,24,.45)}
+h2{margin:0 0 20px;font-family:'Della Respira',serif;font-weight:400;font-size:1.7rem;color:var(--forest)}
+h3{font-family:'Della Respira',serif;font-weight:400;font-size:1.3rem;color:var(--forest);margin:0 0 6px}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-        }
+/* Status + tabs */
+.status-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 8px 14px;position:relative;z-index:1;font-size:.85rem;color:var(--muted)}
+.status-bar b{color:var(--forest)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2fbf71;margin-right:6px;box-shadow:0 0 0 4px rgba(47,191,113,.2)}
+.nav-tabs{display:flex;gap:6px;background:var(--forest);padding:6px;border-radius:999px;margin:0 0 18px;position:relative;z-index:1}
+.nav-tabs button{flex:1;background:transparent;color:#bcd3c5;border-radius:999px;padding:12px 10px;font-size:.9rem}
+.nav-tabs button:hover{background:rgba(255,255,255,.08)}
+.nav-tabs button.active{background:var(--accent);color:#2b2200}
+.tab-content{display:none}.tab-content.active{display:block}
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+/* Fields: filled, not boxed */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px}
+.grid .wide{grid-column:1/-1}
+.form-group{margin-bottom:16px}.grid .form-group{margin:0}
+label{display:block;font-weight:600;font-size:.82rem;color:var(--muted);margin:0 0 6px 4px}
+input,select{width:100%;padding:13px 16px;border:2px solid transparent;border-radius:14px;background:var(--field);font:inherit;font-size:.95rem;color:var(--ink);transition:background .15s,border-color .15s}
+input::placeholder{color:#8a978f}
+input:focus,select:focus{outline:none;background:#fff;border-color:var(--primary)}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary);margin-right:8px;vertical-align:-3px}
+.check{display:flex;align-items:center;background:var(--field);border-radius:14px;padding:12px 16px;cursor:pointer;color:var(--ink);margin:0}
 
-        header {
-            text-align: center;
-            background: var(--primary);
-            color: white;
-            padding: 25px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border-bottom: 5px solid var(--accent);
-        }
+button{font:inherit;font-weight:600;font-size:.92rem;background:var(--primary);color:#fff;border:0;border-radius:999px;padding:13px 26px;cursor:pointer;transition:background .15s,transform .1s}
+button:hover{background:var(--primary-hover)}button:active{transform:scale(.97)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn-primary{background:var(--accent);color:#2b2200;margin-top:22px;padding:14px 30px}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-secondary{background:#e2e8dc;color:var(--forest)}.btn-secondary:hover{background:#d3dccb}
+.btn-link{background:none;color:var(--primary);padding:0;text-decoration:underline;border-radius:0}
+.btn-link:hover{background:none}
+.btn-danger{background:#fbe4e1;color:var(--danger);padding:7px 14px;font-size:.8rem;flex-shrink:0}
+.btn-danger:hover{background:var(--danger);color:#fff}
 
-        header h1 {
-            margin: 0;
-            color: var(--accent);
-            font-family: 'Della Respira', serif;
-            font-size: 2.2rem;
-            letter-spacing: 1px;
-        }
+.alert{padding:12px 16px;border-radius:14px;margin-top:14px;font-size:.9rem}
+.alert-error{background:#fde7e4;color:#9b1c1c}.alert-success{background:#dff3e6;color:#0f5f39}.alert-info{background:#fff3cc;color:#7a5500}
 
-        header p {
-            margin: 8px 0 0 0;
-            font-size: 1rem;
-            color: #ffffff;
-            letter-spacing: 0.5px;
-        }
+/* Sign in */
+#authView{max-width:440px;margin:0 auto}
+#authView .panel{margin-top:0}
+#appView{display:none}
+.auth-wrap{margin-top:-28px;position:relative;z-index:1}
 
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            font-size: 0.85rem;
-            color: var(--primary);
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
+/* Output + schedules */
+.output-box{margin-top:22px;max-height:560px;overflow-y:auto}
+.slot{background:#fff;border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:18px;padding:18px;margin-bottom:14px}
+.slot .when{font-size:.85rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{background:#dff3e6;color:#0f5f39;border-radius:999px;padding:6px 14px;font-size:.85rem;font-weight:600}
+.chip.none{background:#fde7e4;color:#9b1c1c}
+.chat{margin-top:16px;background:var(--paper);border-radius:16px;padding:12px}
+.chat h4{margin:0 0 8px;font-size:.9rem;color:var(--forest)}
+.chat-msgs{max-height:130px;overflow-y:auto;margin-bottom:10px;font-size:.85rem;display:flex;flex-direction:column;gap:6px}
+.chat-msgs div{background:#fff;border-radius:14px;padding:7px 12px;align-self:flex-start;max-width:90%}
+.chat-row{display:flex;gap:8px}.chat-row input{background:#fff;padding:10px 14px}.chat-row button{padding:10px 20px}
 
-        .card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-            border-top: 3px solid var(--primary);
-        }
+.schedule-list{margin-top:18px;display:grid;gap:16px}
+.prof{background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px}
+.prof-header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.avatar{width:46px;height:46px;border-radius:50%;background:var(--forest);color:var(--accent);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1.15rem;flex-shrink:0}
+.prof-name{flex:1;min-width:0}
+.prof-name strong{display:block;font-size:1.02rem}
+.owner-note{display:block;font-size:.78rem;color:var(--muted);margin-top:2px}
+.mine-badge{background:var(--accent);color:#2b2200;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:99px;margin-left:8px;vertical-align:1px}
+.schedule-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;font-size:.9rem}
+.schedule-item:nth-child(even){background:#f3f6ef}
+.day{width:46px;font-weight:700;color:var(--forest);flex-shrink:0}
+.time{background:var(--forest);color:#fff;border-radius:999px;padding:3px 12px;font-size:.78rem;white-space:nowrap;flex-shrink:0}
+.what{flex:1;min-width:0}
+.what.vacant{color:var(--muted);font-style:italic}
+.locked{font-size:.78rem;color:var(--muted);flex-shrink:0}
+.empty{text-align:center;color:var(--muted);padding:26px 10px}
 
-        h2 {
-            margin-top: 0;
-            color: var(--primary);
-            font-family: 'Della Respira', serif;
-            font-size: 1.4rem;
-            border-bottom: 2px solid var(--accent);
-            padding-bottom: 8px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 0.95rem;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(0, 90, 54, 0.2);
-        }
-
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: background 0.2s;
-        }
-
-        button:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .btn-secondary { background-color: #4b5563; }
-        .btn-secondary:hover { background-color: #374151; }
-
-        .btn-link {
-            background: none;
-            color: var(--primary);
-            padding: 0;
-            text-decoration: underline;
-        }
-        .btn-link:hover { background: none; color: var(--primary-hover); }
-
-        .btn-danger {
-            background-color: var(--danger);
-            padding: 5px 10px;
-            font-size: 0.8rem;
-            flex-shrink: 0;
-        }
-        .btn-danger:hover { background-color: #b91c1c; }
-
-        .alert {
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-        }
-        .alert-error { background-color: #fee2e2; color: var(--danger); border: 1px solid #fca5a5; }
-        .alert-success { background-color: #dcfce7; color: var(--success); border: 1px solid #86efac; }
-        .alert-info { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-
-        .schedule-list, .output-box {
-            background: #f9fafb;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 15px;
-            margin-top: 10px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .schedule-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.9rem;
-        }
-        .schedule-item:last-child { border-bottom: none; }
-
-        .owner-note {
-            display: block;
-            font-size: 0.78rem;
-            color: #6b7280;
-            margin-top: 2px;
-        }
-        .locked { font-size: 0.8rem; color: #6b7280; flex-shrink: 0; }
-        .mine-badge {
-            background: var(--accent);
-            color: #3b2f00;
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 1px 7px;
-            border-radius: 99px;
-            margin-left: 6px;
-        }
-
-        .prof-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 4px;
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .nav-tabs button {
-            flex: 1;
-            background: #e5e7eb;
-            color: var(--text-color);
-            border-bottom: 3px solid transparent;
-        }
-
-        .nav-tabs button.active {
-            background: var(--primary);
-            color: white;
-            border-bottom: 3px solid var(--accent);
-            font-weight: bold;
-        }
-
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        #authView { max-width: 420px; margin: 0 auto; }
-        #appView { display: none; }
-    </style>
+@media(max-width:600px){
+  body{padding:10px 10px 40px}header{padding:26px 22px 50px;border-radius:22px}.panel{padding:20px;border-radius:22px}
+  .grid{grid-template-columns:1fr}.nav-tabs{border-radius:22px;flex-direction:column}
+  .schedule-item{flex-wrap:wrap}.what{flex-basis:100%;order:3}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
 </head>
 <body>
-
 <div class="container">
-    <header>
-        <h1>FIT (Faculty Integrated Tracker)</h1>
-        <p>FEU Tech Web-based Scheduling System</p>
-    </header>
+  <header>
+    <h1>Faculty Substitute Finder</h1>
+    <p>FEU Tech web-based scheduling system</p>
+  </header>
 
-    <!-- LOGIN / SIGN UP -->
-    <div id="authView" class="card">
-        <h2 id="authTitle">Sign in</h2>
-        <div class="form-group" id="nameGroup" style="display:none;">
-            <label for="authName">Your Name:</label>
-            <input type="text" id="authName" placeholder="e.g., Mr. Demeke Bayyou">
-        </div>
-        <div class="form-group">
-            <label for="authEmail">Email:</label>
-            <input type="email" id="authEmail" placeholder="name@fit.edu.ph" autocomplete="username">
-        </div>
-        <div class="form-group">
-            <label for="authPassword">Password:</label>
-            <input type="password" id="authPassword" placeholder="At least 6 characters" autocomplete="current-password"
-                   onkeydown="if(event.key === 'Enter') handleAuth()">
-        </div>
-        <button id="authBtn" onclick="handleAuth()">Sign in</button>
-        <p style="font-size:0.9rem;">
-            <span id="authSwitchText">No account yet?</span>
-            <button class="btn-link" id="authSwitchBtn" onclick="toggleAuthMode()">Create one</button>
-        </p>
-        <div id="authMessage"></div>
+  <!-- LOGIN / SIGN UP -->
+  <div id="authView" class="auth-wrap">
+    <div class="panel">
+      <h2 id="authTitle">Sign in</h2>
+      <div class="form-group" id="nameGroup" style="display:none;">
+        <label for="authName">Your name</label>
+        <input type="text" id="authName" placeholder="e.g., Mr. Demeke Bayyou">
+      </div>
+      <div class="form-group">
+        <label for="authEmail">Email</label>
+        <input type="email" id="authEmail" placeholder="name@fit.edu.ph" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="authPassword">Password</label>
+        <input type="password" id="authPassword" placeholder="At least 6 characters" autocomplete="current-password" onkeydown="if(event.key === 'Enter') handleAuth()">
+      </div>
+      <button class="btn-primary" id="authBtn" onclick="handleAuth()" style="margin-top:6px">Sign in</button>
+      <p style="font-size:.9rem;color:var(--muted);margin:18px 0 0">
+        <span id="authSwitchText">No account yet?</span>
+        <button class="btn-link" id="authSwitchBtn" onclick="toggleAuthMode()">Create one</button>
+      </p>
+      <div id="authMessage"></div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="appView">
+    <div class="status-bar">
+      <span><span class="dot"></span>Cloud sync on. Signed in as <b id="userLabel"></b></span>
+      <button class="btn-secondary" style="padding:7px 16px;font-size:.8rem;" onclick="auth.signOut()">Sign out</button>
     </div>
 
-    <!-- MAIN APP (visible after login) -->
-    <div id="appView">
-        <div class="status-bar">
-            <span>🟢 Cloud Sync Active · Signed in as <span id="userLabel"></span></span>
-            <button class="btn-secondary" style="padding:5px 12px;font-size:0.8rem;" onclick="auth.signOut()">Sign out</button>
-        </div>
-
-        <div class="nav-tabs">
-            <button class="active" onclick="switchTab('tab-add', this)">1. Add Professor/Schedule</button>
-            <button onclick="switchTab('tab-absence', this)">2. Record Absence</button>
-            <button onclick="switchTab('tab-view', this)">3. View / Remove Schedules</button>
-        </div>
-
-        <!-- TAB 1: ADD PROFESSOR & SCHEDULE -->
-        <div id="tab-add" class="tab-content active card">
-            <h2>Add Professor & Schedule Entry</h2>
-            <div class="form-group">
-                <label for="profName">Professor Name:</label>
-                <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou">
-            </div>
-            <div class="form-group">
-                <label for="schedDay">Day:</label>
-                <select id="schedDay">
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                    <option value="Saturday">Saturday</option>
-                    <option value="Sunday">Sunday</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="schedType">Type:</label>
-                <select id="schedType" onchange="toggleSubjectInput()">
-                    <option value="class">Class</option>
-                    <option value="vacant">Vacant</option>
-                </select>
-            </div>
-            <div class="form-group" id="subjectGroup">
-                <label for="schedSubject">Subject Name:</label>
-                <input type="text" id="schedSubject" placeholder="e.g., Computer Programming 1L">
-            </div>
-            <div class="form-group">
-                <label for="startTime">Start Time (e.g., 7:00 AM, 13:00, or 2:30 PM):</label>
-                <input type="text" id="startTime" placeholder="7:00 AM">
-            </div>
-            <div class="form-group">
-                <label for="endTime">End Time:</label>
-                <input type="text" id="endTime" placeholder="8:30 AM">
-            </div>
-            <button onclick="handleAddSchedule()">Add Schedule Entry</button>
-            <div id="addMessage"></div>
-        </div>
-
-        <!-- TAB 2: RECORD ABSENCE -->
-        <div id="tab-absence" class="tab-content card">
-            <h2>Record Professor Absence & Find Substitutes</h2>
-            <div class="form-group">
-                <label for="absentProfName">Absent Professor Name:</label>
-                <input type="text" id="absentProfName" placeholder="e.g., Mr. Demeke Bayyou">
-            </div>
-            <div class="form-group">
-                <label for="absenceDay">Day of Absence:</label>
-                <select id="absenceDay">
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                    <option value="Saturday">Saturday</option>
-                    <option value="Sunday">Sunday</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="specificTimeCheck" onchange="toggleAbsenceTimeInputs()" style="width:auto;">
-                    Absent only during a specific time range?
-                </label>
-            </div>
-            <div id="absenceTimeSection" style="display:none;">
-                <div class="form-group">
-                    <label for="absenceStart">Absence Start Time:</label>
-                    <input type="text" id="absenceStart" placeholder="9:00 AM">
-                </div>
-                <div class="form-group">
-                    <label for="absenceEnd">Absence End Time:</label>
-                    <input type="text" id="absenceEnd" placeholder="10:30 AM">
-                </div>
-                <div class="form-group">
-                    <label for="absenceSubject">Subject Affected:</label>
-                    <input type="text" id="absenceSubject" placeholder="Computer Programming 1L">
-                </div>
-            </div>
-            <button onclick="handleRecordAbsence()">Check Substitute Professors</button>
-            <div id="absenceReport" class="output-box" style="display:none;"></div>
-        </div>
-
-        <!-- TAB 3: VIEW / REMOVE SCHEDULES -->
-        <div id="tab-view" class="tab-content card">
-            <h2>All Professor Schedules</h2>
-            <button onclick="renderAllSchedules()" class="btn-secondary">Refresh Schedules</button>
-            <div id="removeMessage"></div>
-            <div id="allSchedulesContainer" class="schedule-list">
-                <p>No professors added yet.</p>
-            </div>
-        </div>
+    <div class="nav-tabs">
+      <button class="active" onclick="switchTab('tab-add', this)">Add schedule</button>
+      <button onclick="switchTab('tab-absence', this)">Record absence</button>
+      <button onclick="switchTab('tab-view', this)">All schedules</button>
     </div>
+
+    <!-- TAB 1 -->
+    <div id="tab-add" class="tab-content active panel">
+      <h2>Add a professor's schedule</h2>
+      <div class="grid">
+        <div class="form-group wide">
+          <label for="profName">Professor name</label>
+          <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou">
+        </div>
+        <div class="form-group">
+          <label for="schedDay">Day</label>
+          <select id="schedDay">
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="schedType">Type</label>
+          <select id="schedType" onchange="toggleSubjectInput()">
+            <option value="class">Class</option>
+            <option value="vacant">Vacant</option>
+          </select>
+        </div>
+        <div class="form-group wide" id="subjectGroup">
+          <label for="schedSubject">Subject</label>
+          <input type="text" id="schedSubject" placeholder="e.g., Computer Programming 1L">
+        </div>
+        <div class="form-group">
+          <label for="startTime">Starts (7:00 AM, 13:00, 2:30 PM)</label>
+          <input type="text" id="startTime" placeholder="7:00 AM">
+        </div>
+        <div class="form-group">
+          <label for="endTime">Ends</label>
+          <input type="text" id="endTime" placeholder="8:30 AM">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="handleAddSchedule()">Save schedule</button>
+      <div id="addMessage"></div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div id="tab-absence" class="tab-content panel">
+      <h2>Find a substitute</h2>
+      <div class="grid">
+        <div class="form-group">
+          <label for="absentProfName">Absent professor</label>
+          <input type="text" id="absentProfName" placeholder="e.g., Mr. Demeke Bayyou">
+        </div>
+        <div class="form-group">
+          <label for="absenceDay">Day of absence</label>
+          <select id="absenceDay">
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+          </select>
+        </div>
+        <div class="form-group wide">
+          <label class="check"><input type="checkbox" id="specificTimeCheck" onchange="toggleAbsenceTimeInputs()">Absent only during a specific time range</label>
+        </div>
+      </div>
+      <div id="absenceTimeSection" class="grid" style="display:none;margin-top:16px;">
+        <div class="form-group">
+          <label for="absenceStart">Absence starts</label>
+          <input type="text" id="absenceStart" placeholder="9:00 AM">
+        </div>
+        <div class="form-group">
+          <label for="absenceEnd">Absence ends</label>
+          <input type="text" id="absenceEnd" placeholder="10:30 AM">
+        </div>
+        <div class="form-group wide">
+          <label for="absenceSubject">Subject affected</label>
+          <input type="text" id="absenceSubject" placeholder="Computer Programming 1L">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="handleRecordAbsence()">Find substitutes</button>
+      <div id="absenceReport" class="output-box" style="display:none;"></div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div id="tab-view" class="tab-content panel">
+      <h2>All schedules</h2>
+      <button onclick="renderAllSchedules()" class="btn-secondary">Refresh</button>
+      <div id="removeMessage"></div>
+      <div id="allSchedulesContainer" class="schedule-list">
+        <p class="empty">No professors added yet.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-    // --- FIREBASE CONFIGURATION & INITIALIZATION ---
-    // All values below come from the SAME Firebase web app.
     const firebaseConfig = {
         apiKey: "AIzaSyD7_5L88hcCuLf_v9CziBl2aaFiVOR-DG0",
         authDomain: "faculty-integrated-tracker.firebaseapp.com",
@@ -398,11 +256,10 @@
     const auth = firebase.auth();
     const profRef = database.ref('professors');
 
-    let professors = [];   // [{id, name, ownerUid, ownerName, schedules:[{id, day, startTime, ...}]}]
+    let professors = [];
     let currentUser = null;
-    let chatRefs = [];     // chat listeners to clean up on re-render
+    let chatRefs = [];
 
-    // ---------- helpers ----------
     function trim(str) { return str.trim(); }
     function toLower(str) { return str.toLowerCase(); }
 
@@ -421,7 +278,11 @@
         return !!currentUser && ownerUid === currentUser.uid;
     }
 
-    // Safe database key for a professor name (same name = same key)
+    function initials(name) {
+        let parts = trim(name).replace(/^(mr|ms|mrs|dr|prof)\.?\s+/i, '').split(' ').filter(Boolean);
+        return ((parts[0] || '?')[0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+    }
+
     function profKey(name) {
         let clean = toLower(trim(name)).replace(/\s+/g, ' ');
         return Array.from(clean).map(ch =>
@@ -462,13 +323,13 @@
         let name = trim(document.getElementById('authName').value);
 
         if (!email || !password) {
-            showMessage('authMessage', '❌ Enter your email and password.', 'error');
+            showMessage('authMessage', 'Enter your email and password.', 'error');
             return;
         }
 
         if (signUpMode) {
             if (!name) {
-                showMessage('authMessage', '❌ Enter your name. It is shown next to the schedules you add.', 'error');
+                showMessage('authMessage', 'Enter your name. It is shown next to the schedules you add.', 'error');
                 return;
             }
             auth.createUserWithEmailAndPassword(email, password)
@@ -478,14 +339,13 @@
                     document.getElementById('userLabel').innerText = myName();
                     renderAllSchedules();
                 })
-                .catch(err => showMessage('authMessage', '❌ ' + err.message, 'error'));
+                .catch(err => showMessage('authMessage', err.message, 'error'));
         } else {
             auth.signInWithEmailAndPassword(email, password)
-                .catch(err => showMessage('authMessage', '❌ ' + err.message, 'error'));
+                .catch(err => showMessage('authMessage', err.message, 'error'));
         }
     }
 
-    // Convert the database snapshot into a plain array
     function handleProfessorsSnapshot(snapshot) {
         let data = snapshot.val() || {};
         professors = Object.entries(data)
@@ -509,7 +369,7 @@
             profRef.on('value', handleProfessorsSnapshot, err => {
                 console.error(err);
                 document.getElementById('allSchedulesContainer').innerHTML =
-                    '<p style="color:var(--danger)">❌ Could not load schedules: ' + esc(err.message) + '</p>';
+                    '<p class="alert alert-error">Could not load schedules: ' + esc(err.message) + '</p>';
             });
         } else {
             profRef.off('value');
@@ -593,7 +453,7 @@
 
     function toggleAbsenceTimeInputs() {
         let isChecked = document.getElementById('specificTimeCheck').checked;
-        document.getElementById('absenceTimeSection').style.display = isChecked ? 'block' : 'none';
+        document.getElementById('absenceTimeSection').style.display = isChecked ? 'grid' : 'none';
     }
 
     // ---------- ADD SCHEDULE ----------
@@ -608,19 +468,19 @@
         let endTime = convertTime(document.getElementById('endTime').value);
 
         if (!name) {
-            showMessage('addMessage', '❌ Professor name cannot be empty.', 'error');
+            showMessage('addMessage', 'Professor name cannot be empty.', 'error');
             return;
         }
         if (startTime === -1 || endTime === -1) {
-            showMessage('addMessage', '❌ Invalid time format. Examples: 7:00 AM, 13:00, or 2:30 PM.', 'error');
+            showMessage('addMessage', 'Invalid time format. Examples: 7:00 AM, 13:00, or 2:30 PM.', 'error');
             return;
         }
         if (endTime <= startTime) {
-            showMessage('addMessage', '❌ Ending time must be later than starting time.', 'error');
+            showMessage('addMessage', 'Ending time must be later than starting time.', 'error');
             return;
         }
         if (type === 'class' && !subject) {
-            showMessage('addMessage', '❌ Subject cannot be empty for classes.', 'error');
+            showMessage('addMessage', 'Subject cannot be empty for classes.', 'error');
             return;
         }
 
@@ -632,12 +492,11 @@
                 sch.day === day && timeOverlaps(sch.startTime, sch.endTime, startTime, endTime)
             );
             if (conflict) {
-                showMessage('addMessage', `❌ Error: Time slot overlaps with an existing schedule entry on ${day}!`, 'error');
+                showMessage('addMessage', `Time slot overlaps with an existing schedule entry on ${day}.`, 'error');
                 return;
             }
         }
 
-        // Every schedule remembers who created it
         let newSchedule = {
             day: day,
             startTime: startTime,
@@ -652,7 +511,6 @@
         if (existing) {
             request = database.ref('professors/' + existing.id + '/schedules').push(newSchedule);
         } else {
-            // New professor profile: the creator becomes the profile owner
             let id = profKey(name);
             let schedId = database.ref('professors/' + id + '/schedules').push().key;
             request = database.ref('professors/' + id).set({
@@ -664,11 +522,11 @@
         }
 
         request.then(() => {
-            showMessage('addMessage', '✅ Schedule entry added & saved to Firebase Cloud!', 'success');
+            showMessage('addMessage', 'Schedule saved.', 'success');
             document.getElementById('startTime').value = '';
             document.getElementById('endTime').value = '';
             document.getElementById('schedSubject').value = '';
-        }).catch(err => showMessage('addMessage', '❌ ' + friendlyError(err), 'error'));
+        }).catch(err => showMessage('addMessage', friendlyError(err), 'error'));
     }
 
     // ---------- REMOVE (OWNER ONLY) ----------
@@ -679,7 +537,7 @@
         if (!sch) return;
 
         if (!isMine(sch.ownerUid)) {
-            showMessage('removeMessage', '❌ You can only remove schedules that you added.', 'error');
+            showMessage('removeMessage', 'You can only remove schedules that you added.', 'error');
             return;
         }
 
@@ -692,15 +550,14 @@
 
         database.ref(`professors/${profId}/schedules/${schedId}`).remove()
             .then(() => {
-                showMessage('removeMessage', '🗑️ Schedule entry removed & synced to Firebase Cloud.', 'success');
-                // Offer to delete the profile if it is now empty and belongs to this user
+                showMessage('removeMessage', 'Schedule removed.', 'success');
                 if (!othersRemain && isMine(prof.ownerUid)) {
                     if (confirm(`All schedules for ${prof.name} have been removed.\n\nDelete this professor profile entirely?`)) {
                         return database.ref('professors/' + profId).remove();
                     }
                 }
             })
-            .catch(err => showMessage('removeMessage', '❌ ' + friendlyError(err), 'error'));
+            .catch(err => showMessage('removeMessage', friendlyError(err), 'error'));
     }
 
     function canDeleteProfessor(prof) {
@@ -712,12 +569,11 @@
         if (!prof) return;
 
         if (!canDeleteProfessor(prof)) {
-            showMessage('removeMessage', '❌ Only the creator of a professor profile can delete it, and only when every schedule on it is theirs.', 'error');
+            showMessage('removeMessage', 'Only the creator of a professor profile can delete it, and only when every schedule on it is theirs.', 'error');
             return;
         }
         if (!confirm(`Delete ${prof.name} and all of their schedules?`)) return;
 
-        // Remove the schedules first, then the profile itself
         let nulls = {};
         prof.schedules.forEach(s => { nulls[s.id] = null; });
 
@@ -726,8 +582,8 @@
             : Promise.resolve();
 
         step.then(() => database.ref('professors/' + profId).remove())
-            .then(() => showMessage('removeMessage', '🗑️ Professor profile deleted & synced to Firebase Cloud.', 'success'))
-            .catch(err => showMessage('removeMessage', '❌ ' + friendlyError(err), 'error'));
+            .then(() => showMessage('removeMessage', 'Professor profile deleted.', 'success'))
+            .catch(err => showMessage('removeMessage', friendlyError(err), 'error'));
     }
 
     // ---------- ABSENCE + CHAT ----------
@@ -747,7 +603,7 @@
         let profIndex = findProfessorIndex(name);
         if (profIndex === -1) {
             reportBox.style.display = 'block';
-            reportBox.innerHTML = '<p style="color:var(--danger)">❌ Professor not found.</p>';
+            reportBox.innerHTML = '<p class="alert alert-error">Professor not found. Check the spelling against the All schedules tab.</p>';
             return;
         }
 
@@ -767,7 +623,7 @@
 
             if (start === -1 || end === -1 || end <= start || !subj) {
                 reportBox.style.display = 'block';
-                reportBox.innerHTML = '<p style="color:var(--danger)">❌ Please enter valid times and subject for absence.</p>';
+                reportBox.innerHTML = '<p class="alert alert-error">Enter a valid start time, end time and subject.</p>';
                 return;
             }
             absenceClasses.push({ day: day, startTime: start, endTime: end, subject: subj });
@@ -775,55 +631,51 @@
 
         if (absenceClasses.length === 0) {
             reportBox.style.display = 'block';
-            reportBox.innerHTML = `<p class="alert alert-info">ℹ️ No scheduled classes found for ${esc(absentProf.name)} on ${day}.</p>`;
+            reportBox.innerHTML = `<p class="alert alert-info">No scheduled classes found for ${esc(absentProf.name)} on ${day}.</p>`;
             return;
         }
 
-        let html = `<h3>Absence Report: ${esc(absentProf.name)}</h3>`;
+        let html = `<h3>${esc(absentProf.name)} is absent on ${day}</h3>`;
         let chatsToAttach = [];
 
         absenceClasses.forEach(absence => {
-            html += `<hr><p><strong>Class needing substitute:</strong> ${esc(absence.subject)} (${absence.day}, ${displayTime(absence.startTime)} - ${displayTime(absence.endTime)})</p>`;
+            html += `<div class="slot"><strong>${esc(absence.subject)}</strong>
+                <div class="when">${absence.day}, ${displayTime(absence.startTime)} - ${displayTime(absence.endTime)}</div>`;
 
             let available = [];
             professors.forEach((p, idx) => {
                 if (idx === profIndex) return;
-
                 let hasConflict = p.schedules.some(sch =>
                     sch.day === absence.day && sch.isClass &&
                     timeOverlaps(sch.startTime, sch.endTime, absence.startTime, absence.endTime)
                 );
-
                 if (!hasConflict) available.push(p.name);
             });
 
             if (available.length === 0) {
-                html += `<p style="color:var(--danger)">❌ No available substitute professor found for this slot.</p>`;
+                html += `<div class="chips"><span class="chip none">No professor is free for this slot</span></div>`;
             } else {
-                html += `<p style="color:var(--success)">✅ <strong>Available Professors:</strong> ${available.map(esc).join(', ')}</p>`;
+                html += `<div class="chips">${available.map(n => `<span class="chip">${esc(n)}</span>`).join('')}</div>`;
 
                 let chatId = `chat_${absence.day}_${absence.startTime}_${absence.endTime}`.replace(/[:\.]/g, '');
                 chatsToAttach.push(chatId);
 
                 html += `
-                    <div style="margin-top: 15px; background: #fff; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; border-left: 4px solid var(--accent);">
-                        <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: var(--primary);">💬 Substitute Coordination Chat (Cloud Live)</h4>
-                        <div id="${chatId}_messages" style="max-height: 120px; overflow-y: auto; margin-bottom: 8px; font-size: 0.85rem; background: #f9fafb; padding: 6px; border-radius: 4px;">
-                            <p style="color: #6b7280; margin: 0;">Loading messages...</p>
+                    <div class="chat">
+                        <h4>Coordinate coverage</h4>
+                        <div class="chat-msgs" id="${chatId}_messages"><p style="color:var(--muted);margin:0">Loading messages...</p></div>
+                        <div class="chat-row">
+                            <input type="text" id="${chatId}_input" placeholder="Message as ${esc(myName())}, e.g. Can you take this class?" onkeydown="if(event.key === 'Enter') sendSubstituteMessage('${chatId}')">
+                            <button onclick="sendSubstituteMessage('${chatId}')">Send</button>
                         </div>
-                        <div style="display: flex; gap: 5px;">
-                            <input type="text" id="${chatId}_input" placeholder="Message as ${esc(myName())} (e.g., Can you take this class?)" style="flex: 1; padding: 6px; font-size: 0.85rem;" onkeydown="if(event.key === 'Enter') sendSubstituteMessage('${chatId}')">
-                            <button onclick="sendSubstituteMessage('${chatId}')" style="padding: 6px 10px; font-size: 0.85rem; background-color: var(--primary);">Send</button>
-                        </div>
-                    </div>
-                `;
+                    </div>`;
             }
+            html += `</div>`;
         });
 
         reportBox.style.display = 'block';
         reportBox.innerHTML = html;
 
-        // Attach live chat listeners after the HTML is on the page
         chatsToAttach.forEach(chatId => {
             let ref = database.ref('chats/' + chatId);
             chatRefs.push(ref);
@@ -833,7 +685,7 @@
                 let msgBox = document.getElementById(`${chatId}_messages`);
                 if (!msgBox) return;
                 if (messages.length === 0) {
-                    msgBox.innerHTML = '<p style="color: #6b7280; margin: 0;">No messages yet. Send a note to coordinate coverage.</p>';
+                    msgBox.innerHTML = '<p style="color:var(--muted);margin:0">No messages yet. Send a note to coordinate coverage.</p>';
                 } else {
                     msgBox.innerHTML = messages.map(m => `<div><strong>${esc(m.sender)}:</strong> ${esc(m.text)}</div>`).join('');
                     msgBox.scrollTop = msgBox.scrollHeight;
@@ -854,7 +706,7 @@
             text: text,
             timestamp: Date.now()
         }).then(() => { msgInput.value = ''; })
-          .catch(err => alert('❌ ' + friendlyError(err)));
+          .catch(err => alert(friendlyError(err)));
     }
 
     // ---------- VIEW ALL ----------
@@ -863,21 +715,22 @@
         if (!currentUser) return;
 
         if (professors.length === 0) {
-            container.innerHTML = '<p>No professors have been added yet.</p>';
+            container.innerHTML = '<p class="empty">No professors have been added yet. Add a schedule to get started.</p>';
             return;
         }
 
         let html = '';
         professors.forEach(p => {
             let deleteBtn = canDeleteProfessor(p)
-                ? `<button class="btn-danger" onclick="removeProfessor('${p.id}')">Delete Professor</button>`
+                ? `<button class="btn-danger" onclick="removeProfessor('${p.id}')">Delete professor</button>`
                 : '';
             let mine = isMine(p.ownerUid) ? '<span class="mine-badge">Your profile</span>' : '';
 
-            html += `<div style="margin-bottom: 15px;">
+            html += `<div class="prof">
                 <div class="prof-header">
-                    <span><strong>Professor: ${esc(p.name)}</strong>${mine}
-                        <span class="owner-note">Profile created by ${esc(p.ownerName)}</span></span>
+                    <div class="avatar">${esc(initials(p.name))}</div>
+                    <div class="prof-name"><strong>${esc(p.name)}${mine}</strong>
+                        <span class="owner-note">Profile created by ${esc(p.ownerName)}</span></div>
                     ${deleteBtn}
                 </div>`;
 
@@ -885,13 +738,13 @@
                 html += `<div class="schedule-item">No schedule available.</div>`;
             } else {
                 p.schedules.forEach(sch => {
-                    let typeLabel = sch.isClass ? esc(sch.subject) : 'VACANT';
                     let action = isMine(sch.ownerUid)
                         ? `<button class="btn-danger" onclick="removeSchedule('${p.id}', '${sch.id}')">Remove</button>`
-                        : `<span class="locked">🔒 Added by ${esc(sch.ownerName || 'another user')}</span>`;
+                        : `<span class="locked">Added by ${esc(sch.ownerName || 'another user')}</span>`;
                     html += `<div class="schedule-item">
-                        <span>${sch.day} | ${displayTime(sch.startTime)} - ${displayTime(sch.endTime)} | ${typeLabel}
-                            ${isMine(sch.ownerUid) ? '<span class="owner-note">Added by you</span>' : ''}</span>
+                        <span class="day">${esc(String(sch.day).slice(0, 3))}</span>
+                        <span class="time">${displayTime(sch.startTime)} - ${displayTime(sch.endTime)}</span>
+                        <span class="what ${sch.isClass ? '' : 'vacant'}">${sch.isClass ? esc(sch.subject) : 'Vacant'}</span>
                         ${action}
                     </div>`;
                 });
@@ -901,6 +754,5 @@
         container.innerHTML = html;
     }
 </script>
-
 </body>
 </html>
