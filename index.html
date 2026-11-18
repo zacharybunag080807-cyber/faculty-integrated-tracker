@@ -97,15 +97,15 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .output-box{margin-top:24px;max-height:520px;overflow-y:auto}
 .slot{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:20px;margin-bottom:14px}
 .slot .when{font-size:0.82rem;color:var(--muted);font-family:'Newsreader',serif;font-style:italic;margin-top:2px}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.chip{background:var(--success-soft);color:var(--success);border:1px solid rgba(22,121,74,0.2);border-radius:6px;padding:4px 10px;font-size:0.8rem;font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{background:var(--success-soft);color:var(--success);border:1px solid rgba(22,121,74,0.2);border-radius:6px;padding:6px 12px;font-size:0.8rem;font-weight:500;display:inline-flex;align-items:center;gap:8px}
+.chip button{background:var(--primary);color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:0.72rem;cursor:pointer}
+.chip button:hover{background:var(--primary-hover)}
 .chip.none{background:var(--danger-soft);color:var(--danger);border-color:rgba(161,44,47,0.2)}
 
-.chat{margin-top:16px;background:var(--field);border-radius:8px;padding:14px;border:1px solid var(--line)}
-.chat h4{margin:0 0 8px;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
-.chat-msgs{max-height:120px;overflow-y:auto;margin-bottom:10px;font-size:0.85rem;display:flex;flex-direction:column;gap:6px}
-.chat-msgs div{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 10px;align-self:flex-start;max-width:90%}
-.chat-row{display:flex;gap:8px}.chat-row input{background:var(--card);padding:8px 12px;font-size:0.85rem}.chat-row button{padding:8px 16px;font-size:0.85rem}
+.mode-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:600;margin-left:6px;vertical-align:1px}
+.mode-online{background:#e0f2fe;color:#0369a1;border:1px solid rgba(3,105,161,0.2)}
+.mode-f2f{background:#fef3c7;color:#92400e;border:1px solid rgba(146,64,14,0.2)}
 
 .schedule-list{margin-top:20px;display:grid;gap:16px}
 .prof{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
@@ -125,12 +125,24 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .locked{font-size:0.75rem;color:var(--muted);flex-shrink:0}
 .empty{text-align:center;color:var(--muted);padding:32px 10px;font-style:italic;font-family:'Newsreader',serif}
 
-/* Modal styling for viewing profiles */
+/* Modal styling for viewing profiles, chat, and large photo */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:grid;place-items:center;z-index:1000;padding:16px;backdrop-filter:blur(4px)}
-.modal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:32px;max-width:500px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-height:85vh;overflow-y:auto}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:32px;max-width:540px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-height:85vh;overflow-y:auto}
 .modal-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--line)}
-.modal-avatar{width:64px;height:64px;border-radius:50%;background:var(--forest);color:var(--accent);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1.5rem;overflow:hidden;flex-shrink:0;border:2px solid var(--line)}
+.modal-avatar{width:72px;height:72px;border-radius:50%;background:var(--forest);color:var(--accent);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1.6rem;overflow:hidden;flex-shrink:0;border:2px solid var(--line);cursor:pointer;position:relative}
 .modal-avatar img{width:100%;height:100%;object-fit:cover}
+.modal-avatar:hover::after{content:"🔍";position:absolute;inset:0;background:rgba(0,0,0,0.3);display:grid;place-items:center;font-size:1.2rem}
+
+/* Direct Chat Window */
+.chat-box{display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto;background:var(--field);padding:12px;border-radius:8px;border:1px solid var(--line);margin-bottom:16px}
+.chat-msg{padding:8px 12px;border-radius:8px;max-width:85%;font-size:0.88rem}
+.chat-msg.mine{background:var(--primary);color:#fff;align-self:flex-end}
+.chat-msg.theirs{background:#fff;color:var(--ink);border:1px solid var(--line);align-self:flex-start}
+.chat-msg .sender-label{font-size:0.7rem;opacity:0.8;margin-bottom:2px;display:block}
+
+/* Fullscreen Photo Lightbox */
+.lightbox-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:grid;place-items:center;z-index:2000;padding:20px;cursor:zoom-out}
+.lightbox-content{max-width:90vw;max-height:90vh;border-radius:12px;object-fit:contain;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
 
 @media(max-width:600px){
   body{padding:12px 12px 48px}header{padding:24px 20px}.panel{padding:20px}
@@ -215,6 +227,13 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
           <label for="schedSubject">Subject title</label>
           <input type="text" id="schedSubject" placeholder="e.g., Computer Programming 1L">
         </div>
+        <div class="form-group" id="modeGroup">
+          <label for="schedMode">Class mode</label>
+          <select id="schedMode">
+            <option value="Face-to-Face">Face-to-Face</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
         <div class="form-group">
           <label for="startTime">Start time (e.g., 7:00 AM, 13:00)</label>
           <input type="text" id="startTime" placeholder="7:00 AM">
@@ -255,9 +274,16 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
           <label for="absenceEnd">Absence ends</label>
           <input type="text" id="absenceEnd" placeholder="10:30 AM">
         </div>
-        <div class="form-group wide">
+        <div class="form-group">
           <label for="absenceSubject">Subject affected</label>
           <input type="text" id="absenceSubject" placeholder="Computer Programming 1L">
+        </div>
+        <div class="form-group">
+          <label for="absenceMode">Class mode</label>
+          <select id="absenceMode">
+            <option value="Face-to-Face">Face-to-Face</option>
+            <option value="Online">Online</option>
+          </select>
         </div>
       </div>
       <button class="btn-primary" onclick="handleRecordAbsence()">Find available substitutes</button>
@@ -278,8 +304,9 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </div>
 </div>
 
-<!-- MODAL CONTAINER -->
+<!-- MODAL & LIGHTBOX CONTAINERS -->
 <div id="modalContainer"></div>
+<div id="lightboxContainer"></div>
 
 <script>
     const firebaseConfig = {
@@ -300,7 +327,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
     let professors = [];
     let currentUser = null;
-    let chatRefs = [];
+    let activeChatRef = null;
 
     function trim(str) { return str.trim(); }
     function toLower(str) { return str.toLowerCase(); }
@@ -442,7 +469,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             });
         } else {
             profRef.off('value');
-            clearChatListeners();
+            if (activeChatRef) { activeChatRef.off(); activeChatRef = null; }
             professors = [];
             document.getElementById('appView').style.display = 'none';
             document.getElementById('mastheadStatus').style.display = 'none';
@@ -519,6 +546,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     function toggleSubjectInput() {
         let type = document.getElementById('schedType').value;
         document.getElementById('subjectGroup').style.display = type === 'class' ? 'block' : 'none';
+        document.getElementById('modeGroup').style.display = type === 'class' ? 'block' : 'none';
     }
 
     function toggleAbsenceTimeInputs() {
@@ -534,6 +562,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         let day = document.getElementById('schedDay').value;
         let type = document.getElementById('schedType').value;
         let subject = trim(document.getElementById('schedSubject').value);
+        let mode = document.getElementById('schedMode').value;
         let startTime = convertTime(document.getElementById('startTime').value);
         let endTime = convertTime(document.getElementById('endTime').value);
 
@@ -569,6 +598,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             endTime: endTime,
             isClass: type === 'class',
             subject: type === 'class' ? subject : 'Vacant',
+            mode: type === 'class' ? mode : '',
             ownerUid: currentUser.uid,
             ownerName: myName()
         };
@@ -611,7 +641,80 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         input.click();
     }
 
-    // ---------- VIEW PROFILE MODAL ----------
+    // ---------- PRIVATE DIRECT MESSAGING ----------
+    function openPrivateChat(substituteName) {
+        if (!currentUser) return;
+        let myProfName = myName();
+        if (myProfName === substituteName) {
+            alert("You cannot message yourself.");
+            return;
+        }
+
+        // Create a unique, sorted bidirectional chat ID so only these two professors share the thread
+        let sortedNames = [myProfName, substituteName].sort();
+        let chatId = 'private_chat_' + profKey(sortedNames[0]) + '_' + profKey(sortedNames[1]);
+
+        if (activeChatRef) { activeChatRef.off(); activeChatRef = null; }
+
+        let modalHTML = `
+            <div class="modal-overlay" onclick="closeModal(event)">
+                <div class="modal" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <div>
+                            <h3 style="margin:0">Private Chat with ${esc(substituteName)}</h3>
+                            <span style="font-size:0.82rem;color:var(--muted)">Secure 1-on-1 substitute coordination</span>
+                        </div>
+                    </div>
+                    <div class="chat-box" id="privateChatBox">
+                        <p style="color:var(--muted);text-align:center;font-style:italic">Loading messages...</p>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <input type="text" id="privateChatInput" placeholder="Type a private message..." onkeydown="if(event.key === 'Enter') sendPrivateMessage('${chatId}')">
+                        <button onclick="sendPrivateMessage('${chatId}')">Send</button>
+                    </div>
+                    <button class="btn-secondary" style="width:100%;margin-top:16px" onclick="document.getElementById('modalContainer').innerHTML=''">Close Chat</button>
+                </div>
+            </div>`;
+        document.getElementById('modalContainer').innerHTML = modalHTML;
+
+        activeChatRef = database.ref('private_chats/' + chatId);
+        activeChatRef.on('value', snapshot => {
+            let msgData = snapshot.val();
+            let messages = msgData ? Object.values(msgData) : [];
+            let box = document.getElementById('privateChatBox');
+            if (!box) return;
+
+            if (messages.length === 0) {
+                box.innerHTML = '<p style="color:var(--muted);text-align:center;font-style:italic">No messages yet. Start the conversation!</p>';
+            } else {
+                box.innerHTML = messages.map(m => {
+                    let mine = m.senderUid === currentUser.uid;
+                    return `<div class="chat-msg ${mine ? 'mine' : 'theirs'}">
+                        <span class="sender-label">${esc(m.senderName)}</span>
+                        ${esc(m.text)}
+                    </div>`;
+                }).join('');
+                box.scrollTop = box.scrollHeight;
+            }
+        });
+    }
+
+    function sendPrivateMessage(chatId) {
+        let input = document.getElementById('privateChatInput');
+        let text = trim(input.value);
+        if (!text) return;
+
+        database.ref('private_chats/' + chatId).push({
+            senderUid: currentUser.uid,
+            senderName: myName(),
+            text: text,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            input.value = '';
+        }).catch(err => alert(friendlyError(err)));
+    }
+
+    // ---------- VIEW PROFILE MODAL & PHOTO LIGHTBOX ----------
     function viewProfileModal(profId) {
         let prof = professors.find(p => p.id === profId);
         if (!prof) return;
@@ -624,7 +727,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         });
 
         let avatarContent = prof.avatar 
-            ? `<img src="${prof.avatar}" alt="${esc(prof.name)}" onerror="this.onerror=null;this.parentNode.innerHTML='${initials(prof.name)}';">`
+            ? `<img src="${prof.avatar}" alt="${esc(prof.name)}" onclick="openLightbox('${esc(prof.avatar)}')">`
             : initials(prof.name);
 
         let schedHtml = sortedScheds.length === 0 
@@ -632,11 +735,12 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             : sortedScheds.map(sch => {
                 let label = sch.isClass ? esc(sch.subject) : 'Vacant';
                 let whatClass = sch.isClass ? '' : ' vacant';
+                let modeBadge = (sch.isClass && sch.mode) ? `<span class="mode-badge ${sch.mode === 'Online' ? 'mode-online' : 'mode-f2f'}">${sch.mode}</span>` : '';
                 return `
                     <div class="schedule-item">
                         <span class="day">${sch.day.slice(0,3)}</span>
                         <span class="time">${displayTime(sch.startTime)} – ${displayTime(sch.endTime)}</span>
-                        <span class="what${whatClass}">${label}</span>
+                        <span class="what${whatClass}">${label} ${modeBadge}</span>
                     </div>`;
             }).join('');
 
@@ -644,7 +748,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             <div class="modal-overlay" onclick="closeModal(event)">
                 <div class="modal">
                     <div class="modal-header">
-                        <div class="modal-avatar">${avatarContent}</div>
+                        <div class="modal-avatar" ${prof.avatar ? `title="Click photo to enlarge"` : ''}>${avatarContent}</div>
                         <div>
                             <h3 style="margin:0">${esc(prof.name)}</h3>
                             <span style="font-size:0.82rem;color:var(--muted)">Professor Schedule Profile</span>
@@ -659,9 +763,18 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         document.getElementById('modalContainer').innerHTML = modalHTML;
     }
 
+    function openLightbox(imgSrc) {
+        let lightboxHTML = `
+            <div class="lightbox-overlay" onclick="document.getElementById('lightboxContainer').innerHTML=''">
+                <img src="${imgSrc}" class="lightbox-content" alt="Enlarged profile picture">
+            </div>`;
+        document.getElementById('lightboxContainer').innerHTML = lightboxHTML;
+    }
+
     function closeModal(e) {
         if (e.target.classList.contains('modal-overlay')) {
             document.getElementById('modalContainer').innerHTML = '';
+            if (activeChatRef) { activeChatRef.off(); activeChatRef = null; }
         }
     }
 
@@ -722,19 +835,14 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             .catch(err => showMessage('removeMessage', friendlyError(err), 'error'));
     }
 
-    // ---------- ABSENCE + CHAT ----------
-    function clearChatListeners() {
-        chatRefs.forEach(r => r.off());
-        chatRefs = [];
-    }
-
+    // ---------- ABSENCE ----------
     function handleRecordAbsence() {
         let name = trim(document.getElementById('absentProfName').value);
         let day = document.getElementById('absenceDay').value;
         let isSpecific = document.getElementById('specificTimeCheck').checked;
         let reportBox = document.getElementById('absenceReport');
 
-        clearChatListeners();
+        if (activeChatRef) { activeChatRef.off(); activeChatRef = null; }
 
         let profIndex = findProfessorIndex(name);
         if (profIndex === -1) {
@@ -749,20 +857,21 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         if (!isSpecific) {
             absentProf.schedules.forEach(sch => {
                 if (sch.day === day && sch.isClass) {
-                    absenceClasses.push({ day: sch.day, startTime: sch.startTime, endTime: sch.endTime, subject: sch.subject });
+                    absenceClasses.push({ day: sch.day, startTime: sch.startTime, endTime: sch.endTime, subject: sch.subject, mode: sch.mode });
                 }
             });
         } else {
             let start = convertTime(document.getElementById('absenceStart').value);
             let end = convertTime(document.getElementById('absenceEnd').value);
             let subj = trim(document.getElementById('absenceSubject').value);
+            let mode = document.getElementById('absenceMode').value;
 
             if (start === -1 || end === -1 || end <= start || !subj) {
                 reportBox.style.display = 'block';
                 reportBox.innerHTML = '<p class="alert alert-error">Enter a valid start time, end time and subject.</p>';
                 return;
             }
-            absenceClasses.push({ day: day, startTime: start, endTime: end, subject: subj });
+            absenceClasses.push({ day: day, startTime: start, endTime: end, subject: subj, mode: mode });
         }
 
         if (absenceClasses.length === 0) {
@@ -772,10 +881,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         }
 
         let html = `<h3 style="margin-bottom:16px">${esc(absentProf.name)} — Absent on ${day}</h3>`;
-        let chatsToAttach = [];
 
         absenceClasses.forEach(absence => {
-            html += `<div class="slot"><strong style="font-family:'Della Respira',serif;font-size:1.05rem">${esc(absence.subject)}</strong>
+            let modeBadge = absence.mode ? `<span class="mode-badge ${absence.mode === 'Online' ? 'mode-online' : 'mode-f2f'}">${absence.mode}</span>` : '';
+            html += `<div class="slot"><strong style="font-family:'Della Respira',serif;font-size:1.05rem">${esc(absence.subject)} ${modeBadge}</strong>
                 <div class="when">${absence.day}, ${displayTime(absence.startTime)} – ${displayTime(absence.endTime)}</div>`;
 
             let available = [];
@@ -791,57 +900,13 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             if (available.length === 0) {
                 html += `<div class="chips"><span class="chip none">No professor is free for this slot</span></div>`;
             } else {
-                html += `<div class="chips">${available.map(n => `<span class="chip">${esc(n)}</span>`).join('')}</div>`;
-
-                let chatId = `chat_${absence.day}_${absence.startTime}_${absence.endTime}`.replace(/[:\.]/g, '');
-                chatsToAttach.push(chatId);
-
-                html += `
-                    <div class="chat">
-                        <h4>Coordinate coverage</h4>
-                        <div class="chat-msgs" id="${chatId}_messages"><p style="color:var(--muted);margin:0;font-style:italic">Loading messages...</p></div>
-                        <div class="chat-row">
-                            <input type="text" id="${chatId}_input" placeholder="Message as ${esc(myName())}..." onkeydown="if(event.key === 'Enter') sendSubstituteMessage('${chatId}')">
-                            <button onclick="sendSubstituteMessage('${chatId}')">Send</button>
-                        </div>
-                    </div>`;
+                html += `<div class="chips">${available.map(n => `<span class="chip">${esc(n)} <button onclick="openPrivateChat('${esc(n)}')">Message</button></span>`).join('')}</div>`;
             }
             html += `</div>`;
         });
 
         reportBox.style.display = 'block';
         reportBox.innerHTML = html;
-
-        chatsToAttach.forEach(chatId => {
-            let ref = database.ref('chats/' + chatId);
-            chatRefs.push(ref);
-            ref.on('value', snapshot => {
-                let msgData = snapshot.val();
-                let messages = msgData ? Object.values(msgData) : [];
-                let msgBox = document.getElementById(`${chatId}_messages`);
-                if (!msgBox) return;
-                if (messages.length === 0) {
-                    msgBox.innerHTML = '<p style="color:var(--muted);margin:0;font-style:italic">No messages yet. Send a note to coordinate coverage.</p>';
-                } else {
-                    msgBox.innerHTML = messages.map(m => `<div><strong>${esc(m.sender)}:</strong> ${esc(m.text)}</div>`).join('');
-                    msgBox.scrollTop = msgBox.scrollHeight;
-                }
-            });
-        });
-    }
-
-    function sendSubstituteMessage(chatId) {
-        let input = document.getElementById(`${chatId}_input`);
-        let text = trim(input.value);
-        if (!text) return;
-
-        database.ref('chats/' + chatId).push({
-            sender: myName(),
-            text: text,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            input.value = '';
-        }).catch(err => alert(friendlyError(err)));
     }
 
     // ---------- VIEW ALL ----------
@@ -874,11 +939,12 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
                     let mine = isMine(sch.ownerUid);
                     let label = sch.isClass ? esc(sch.subject) : 'Vacant';
                     let whatClass = sch.isClass ? '' : ' vacant';
+                    let modeBadge = (sch.isClass && sch.mode) ? `<span class="mode-badge ${sch.mode === 'Online' ? 'mode-online' : 'mode-f2f'}">${sch.mode}</span>` : '';
                     return `
                         <div class="schedule-item">
                             <span class="day">${sch.day.slice(0,3)}</span>
                             <span class="time">${displayTime(sch.startTime)} – ${displayTime(sch.endTime)}</span>
-                            <span class="what${whatClass}">${label}</span>
+                            <span class="what${whatClass}">${label} ${modeBadge}</span>
                             ${mine ? `<button class="btn-danger" onclick="removeSchedule('${prof.id}', '${sch.id}')">Remove</button>` : `<span class="locked" title="Added by ${esc(sch.ownerName)}">Added by ${esc(sch.ownerName)}</span>`}
                         </div>`;
                 }).join('');
