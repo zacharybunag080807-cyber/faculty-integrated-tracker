@@ -18,28 +18,32 @@
 body{margin:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--paper);color:var(--ink);padding:16px 16px 48px}
 .container{max-width:920px;margin:0 auto}
 
-/* Masthead: a timetable made of bars */
-header{position:relative;overflow:hidden;background:var(--forest);color:#fff;border-radius:28px;padding:34px 32px 56px;margin-bottom:-28px}
+/* Masthead: timetable with integrated status badge */
+header{position:relative;overflow:hidden;background:var(--forest);color:#fff;border-radius:28px;padding:34px 32px 64px;margin-bottom:-28px}
 header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:22px;
   background:repeating-linear-gradient(90deg,var(--accent) 0 38px,transparent 38px 46px,rgba(255,199,44,.45) 46px 70px,transparent 70px 78px,rgba(255,199,44,.18) 78px 96px,transparent 96px 104px)}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
 header h1{margin:0;font-family:'Della Respira',serif;font-weight:400;font-size:clamp(1.9rem,5vw,3rem);line-height:1.05;color:var(--accent);max-width:12em}
 header p{margin:10px 0 0;color:#cfe3d7;font-size:.95rem}
+
+.masthead-status{display:none;align-items:center;gap:10px;background:rgba(0,0,0,.25);padding:8px 16px;border-radius:999px;font-size:.82rem;color:#cfe3d7;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.08)}
+.masthead-status b{color:#fff}
+.masthead-status button{background:rgba(255,255,255,.15);color:#fff;padding:4px 10px;font-size:.75rem;border-radius:999px}
+.masthead-status button:hover{background:rgba(255,255,255,.3)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2fbf71;box-shadow:0 0 0 3px rgba(47,191,113,.25)}
 
 .panel{position:relative;background:var(--card);border-radius:28px;padding:28px;box-shadow:0 18px 40px -22px rgba(0,40,24,.45)}
 h2{margin:0 0 20px;font-family:'Della Respira',serif;font-weight:400;font-size:1.7rem;color:var(--forest)}
 h3{font-family:'Della Respira',serif;font-weight:400;font-size:1.3rem;color:var(--forest);margin:0 0 6px}
 
-/* Status + tabs */
-.status-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 8px 14px;position:relative;z-index:1;font-size:.85rem;color:var(--muted)}
-.status-bar b{color:var(--forest)}
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2fbf71;margin-right:6px;box-shadow:0 0 0 4px rgba(47,191,113,.2)}
+/* Tabs */
 .nav-tabs{display:flex;gap:6px;background:var(--forest);padding:6px;border-radius:999px;margin:0 0 18px;position:relative;z-index:1}
 .nav-tabs button{flex:1;background:transparent;color:#bcd3c5;border-radius:999px;padding:12px 10px;font-size:.9rem}
 .nav-tabs button:hover{background:rgba(255,255,255,.08)}
 .nav-tabs button.active{background:var(--accent);color:#2b2200}
 .tab-content{display:none}.tab-content.active{display:block}
 
-/* Fields: filled, not boxed */
+/* Fields */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px}
 .grid .wide{grid-column:1/-1}
 .form-group{margin-bottom:16px}.grid .form-group{margin:0}
@@ -86,7 +90,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .schedule-list{margin-top:18px;display:grid;gap:16px}
 .prof{background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px}
 .prof-header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
-.avatar{width:46px;height:46px;border-radius:50%;background:var(--forest);color:var(--accent);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1.15rem;flex-shrink:0}
+.avatar{width:46px;height:46px;border-radius:50%;background:var(--forest);color:var(--accent);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1.15rem;flex-shrink:0;overflow:hidden;object-fit:cover;}
+.avatar img{width:100%;height:100%;object-fit:cover}
 .prof-name{flex:1;min-width:0}
 .prof-name strong{display:block;font-size:1.02rem}
 .owner-note{display:block;font-size:.78rem;color:var(--muted);margin-top:2px}
@@ -111,8 +116,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <body>
 <div class="container">
   <header>
-    <h1>Faculty Substitute Finder</h1>
-    <p>FEU Tech web-based scheduling system</p>
+    <div class="header-top">
+      <div>
+        <h1>Faculty Substitute Finder</h1>
+        <p>FEU Tech web-based scheduling system</p>
+      </div>
+      <div id="mastheadStatus" class="masthead-status">
+        <span><span class="dot"></span> Signed in as <b id="userLabel"></b></span>
+        <button onclick="auth.signOut()">Sign out</button>
+      </div>
+    </div>
   </header>
 
   <!-- LOGIN / SIGN UP -->
@@ -141,12 +154,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   </div>
 
   <!-- MAIN APP -->
-  <div id="appView">
-    <div class="status-bar">
-      <span><span class="dot"></span>Cloud sync on. Signed in as <b id="userLabel"></b></span>
-      <button class="btn-secondary" style="padding:7px 16px;font-size:.8rem;" onclick="auth.signOut()">Sign out</button>
-    </div>
-
+  <div id="appView" style="margin-top: 28px;">
     <div class="nav-tabs">
       <button class="active" onclick="switchTab('tab-add', this)">Add schedule</button>
       <button onclick="switchTab('tab-absence', this)">Record absence</button>
@@ -157,9 +165,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <div id="tab-add" class="tab-content active panel">
       <h2>Add a professor's schedule</h2>
       <div class="grid">
-        <div class="form-group wide">
+        <div class="form-group">
           <label for="profName">Professor name</label>
           <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou">
+        </div>
+        <div class="form-group">
+          <label for="profAvatar">Profile picture URL (optional)</label>
+          <input type="url" id="profAvatar" placeholder="https://example.com/photo.jpg">
         </div>
         <div class="form-group">
           <label for="schedDay">Day</label>
@@ -353,6 +365,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
             .map(([id, p]) => ({
                 id: id,
                 name: p.name,
+                avatar: p.avatar || '',
                 ownerUid: p.ownerUid || null,
                 ownerName: p.ownerName || 'Unknown',
                 schedules: Object.entries(p.schedules || {}).map(([sid, s]) => ({ id: sid, ...s }))
@@ -365,6 +378,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         if (user) {
             document.getElementById('authView').style.display = 'none';
             document.getElementById('appView').style.display = 'block';
+            document.getElementById('mastheadStatus').style.display = 'flex';
             document.getElementById('userLabel').innerText = myName();
             profRef.on('value', handleProfessorsSnapshot, err => {
                 console.error(err);
@@ -376,6 +390,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
             clearChatListeners();
             professors = [];
             document.getElementById('appView').style.display = 'none';
+            document.getElementById('mastheadStatus').style.display = 'none';
             document.getElementById('authView').style.display = 'block';
             document.getElementById('authPassword').value = '';
         }
@@ -461,6 +476,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         if (!currentUser) return;
 
         let name = trim(document.getElementById('profName').value).replace(/\s+/g, ' ');
+        let avatar = trim(document.getElementById('profAvatar').value);
         let day = document.getElementById('schedDay').value;
         let type = document.getElementById('schedType').value;
         let subject = trim(document.getElementById('schedSubject').value);
@@ -508,24 +524,25 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         };
 
         let request;
-        if (existing) {
-            request = database.ref('professors/' + existing.id + '/schedules').push(newSchedule);
-        } else {
-            let id = profKey(name);
+        let id = existing ? existing.id : profKey(name);
+        let profUpdateData = {
+            name: name,
+            avatar: avatar || (existing ? existing.avatar : ''),
+            ownerUid: existing ? existing.ownerUid : currentUser.uid,
+            ownerName: existing ? existing.ownerName : myName()
+        };
+
+        request = database.ref('professors/' + id).update(profUpdateData).then(() => {
             let schedId = database.ref('professors/' + id + '/schedules').push().key;
-            request = database.ref('professors/' + id).set({
-                name: name,
-                ownerUid: currentUser.uid,
-                ownerName: myName(),
-                schedules: { [schedId]: newSchedule }
-            });
-        }
+            return database.ref(`professors/${id}/schedules/${schedId}`).set(newSchedule);
+        });
 
         request.then(() => {
             showMessage('addMessage', 'Schedule saved.', 'success');
             document.getElementById('startTime').value = '';
             document.getElementById('endTime').value = '';
             document.getElementById('schedSubject').value = '';
+            document.getElementById('profAvatar').value = '';
         }).catch(err => showMessage('addMessage', friendlyError(err), 'error'));
     }
 
@@ -695,63 +712,74 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     }
 
     function sendSubstituteMessage(chatId) {
-        if (!currentUser) return;
-        let msgInput = document.getElementById(`${chatId}_input`);
-        let text = trim(msgInput.value);
+        let input = document.getElementById(`${chatId}_input`);
+        let text = trim(input.value);
         if (!text) return;
 
         database.ref('chats/' + chatId).push({
             sender: myName(),
-            uid: currentUser.uid,
             text: text,
-            timestamp: Date.now()
-        }).then(() => { msgInput.value = ''; })
-          .catch(err => alert(friendlyError(err)));
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            input.value = '';
+        }).catch(err => alert(friendlyError(err)));
     }
 
     // ---------- VIEW ALL ----------
     function renderAllSchedules() {
         let container = document.getElementById('allSchedulesContainer');
-        if (!currentUser) return;
-
         if (professors.length === 0) {
-            container.innerHTML = '<p class="empty">No professors have been added yet. Add a schedule to get started.</p>';
+            container.innerHTML = '<p class="empty">No professors added yet.</p>';
             return;
         }
 
-        let html = '';
-        professors.forEach(p => {
-            let deleteBtn = canDeleteProfessor(p)
-                ? `<button class="btn-danger" onclick="removeProfessor('${p.id}')">Delete professor</button>`
-                : '';
-            let mine = isMine(p.ownerUid) ? '<span class="mine-badge">Your profile</span>' : '';
+        let dayOrder = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 };
 
-            html += `<div class="prof">
-                <div class="prof-header">
-                    <div class="avatar">${esc(initials(p.name))}</div>
-                    <div class="prof-name"><strong>${esc(p.name)}${mine}</strong>
-                        <span class="owner-note">Profile created by ${esc(p.ownerName)}</span></div>
-                    ${deleteBtn}
+        let sortedProfs = [...professors].sort((a, b) => a.name.localeCompare(b.name));
+
+        container.innerHTML = sortedProfs.map(prof => {
+            let sortedScheds = [...prof.schedules].sort((a, b) => {
+                let dDiff = (dayOrder[a.day] || 8) - (dayOrder[b.day] || 8);
+                if (dDiff !== 0) return dDiff;
+                return a.startTime - b.startTime;
+            });
+
+            let avatarContent = prof.avatar 
+                ? `<img src="${esc(prof.avatar)}" alt="${esc(prof.name)}" onerror="this.onerror=null;this.parentNode.innerHTML='${initials(prof.name)}';">`
+                : initials(prof.name);
+
+            let deletableProf = canDeleteProfessor(prof);
+
+            let schedHtml = sortedScheds.length === 0 
+                ? '<p class="empty" style="padding:10px">No schedules listed.</p>'
+                : sortedScheds.map(sch => {
+                    let mine = isMine(sch.ownerUid);
+                    let label = sch.isClass ? esc(sch.subject) : 'Vacant';
+                    let whatClass = sch.isClass ? '' : ' vacant';
+                    return `
+                        <div class="schedule-item">
+                            <span class="day">${sch.day.slice(0,3)}</span>
+                            <span class="time">${displayTime(sch.startTime)} - ${displayTime(sch.endTime)}</span>
+                            <span class="what${whatClass}">${label}</span>
+                            ${mine ? `<button class="btn-danger" onclick="removeSchedule('${prof.id}', '${sch.id}')">Remove</button>` : `<span class="locked" title="Added by ${esc(sch.ownerName)}">Added by ${esc(sch.ownerName)}</span>`}
+                        </div>`;
+                }).join('');
+
+            return `
+                <div class="prof">
+                    <div class="prof-header">
+                        <div class="avatar">${avatarContent}</div>
+                        <div class="prof-name">
+                            <strong>${esc(prof.name)} ${isMine(prof.ownerUid) ? '<span class="mine-badge">You</span>' : ''}</strong>
+                            <span class="owner-note">Profile created by ${esc(prof.ownerName)}</span>
+                        </div>
+                        ${deletableProf ? `<button class="btn-danger" onclick="removeProfessor('${prof.id}')">Delete profile</button>` : ''}
+                    </div>
+                    <div style="display:grid;gap:6px">
+                        ${schedHtml}
+                    </div>
                 </div>`;
-
-            if (p.schedules.length === 0) {
-                html += `<div class="schedule-item">No schedule available.</div>`;
-            } else {
-                p.schedules.forEach(sch => {
-                    let action = isMine(sch.ownerUid)
-                        ? `<button class="btn-danger" onclick="removeSchedule('${p.id}', '${sch.id}')">Remove</button>`
-                        : `<span class="locked">Added by ${esc(sch.ownerName || 'another user')}</span>`;
-                    html += `<div class="schedule-item">
-                        <span class="day">${esc(String(sch.day).slice(0, 3))}</span>
-                        <span class="time">${displayTime(sch.startTime)} - ${displayTime(sch.endTime)}</span>
-                        <span class="what ${sch.isClass ? '' : 'vacant'}">${sch.isClass ? esc(sch.subject) : 'Vacant'}</span>
-                        ${action}
-                    </div>`;
-                });
-            }
-            html += `</div>`;
-        });
-        container.innerHTML = html;
+        }).join('');
     }
 </script>
 </body>
