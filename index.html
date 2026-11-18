@@ -81,6 +81,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .btn-link:hover{background:none;color:var(--primary-hover)}
 .btn-danger{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(161,44,47,0.2);padding:6px 12px;font-size:0.78rem;border-radius:6px;flex-shrink:0}
 .btn-danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn-subtle{background:var(--field);color:var(--forest);border:1px solid var(--line);padding:6px 12px;font-size:0.78rem;border-radius:6px;flex-shrink:0}
+.btn-subtle:hover{background:var(--line);color:var(--forest)}
 
 .alert{padding:12px 16px;border-radius:8px;margin-top:16px;font-size:0.88rem;border:1px solid transparent}
 .alert-error{background:var(--danger-soft);color:var(--danger);border-color:rgba(161,44,47,0.15)}
@@ -183,12 +185,12 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <div id="tab-add" class="tab-content panel active">
       <h2>Add a professor's schedule</h2>
       <div class="grid">
-        <div class="form-group">
+        <div class="form-group wide">
           <label for="profName">Professor name</label>
-          <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou">
+          <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou" onblur="checkExistingProfessor()">
         </div>
-        <div class="form-group">
-          <label for="profAvatarFile">Profile picture (PNG, JPG)</label>
+        <div class="form-group wide" id="avatarUploadGroup">
+          <label for="profAvatarFile">Profile picture (PNG, JPG) <span id="avatarNote" style="font-weight:400;color:var(--muted)">(Required for new professors)</span></label>
           <input type="file" id="profAvatarFile" accept="image/*">
         </div>
         <div class="form-group">
@@ -491,6 +493,17 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         document.getElementById('absenceTimeSection').style.display = isChecked ? 'grid' : 'none';
     }
 
+    function checkExistingProfessor() {
+        let name = trim(document.getElementById('profName').value);
+        let profIndex = findProfessorIndex(name);
+        let note = document.getElementById('avatarNote');
+        if (profIndex !== -1 && professors[profIndex].avatar) {
+            note.innerText = "(Optional: Professor already has a profile picture. Upload only if you want to change it)";
+        } else {
+            note.innerText = "(Required for new professors)";
+        }
+    }
+
     // ---------- ADD SCHEDULE ----------
     function handleAddSchedule() {
         if (!currentUser) return;
@@ -523,6 +536,11 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         let profIndex = findProfessorIndex(name);
         let existing = profIndex !== -1 ? professors[profIndex] : null;
 
+        if (!existing && (!fileInput.files || !fileInput.files[0])) {
+            showMessage('addMessage', 'Please upload a profile picture for this new professor.', 'error');
+            return;
+        }
+
         if (existing) {
             let conflict = existing.schedules.some(sch =>
                 sch.day === day && timeOverlaps(sch.startTime, sch.endTime, startTime, endTime)
@@ -545,9 +563,11 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             };
 
             let id = existing ? existing.id : profKey(name);
+            let finalAvatar = avatarDataUrl || (existing ? existing.avatar : '');
+
             let profUpdateData = {
                 name: name,
-                avatar: avatarDataUrl || (existing ? existing.avatar : ''),
+                avatar: finalAvatar,
                 ownerUid: existing ? existing.ownerUid : currentUser.uid,
                 ownerName: existing ? existing.ownerName : myName()
             };
@@ -561,6 +581,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
                 document.getElementById('endTime').value = '';
                 document.getElementById('schedSubject').value = '';
                 document.getElementById('profAvatarFile').value = '';
+                checkExistingProfessor();
             }).catch(err => showMessage('addMessage', friendlyError(err), 'error'));
         };
 
@@ -576,6 +597,28 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         } else {
             processSave(null);
         }
+    }
+
+    // ---------- CHANGE PROFILE PICTURE ----------
+    function changeProfessorAvatar(profId) {
+        let prof = professors.find(p => p.id === profId);
+        if (!prof) return;
+
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = e => {
+            let file = e.target.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            reader.onload = event => {
+                database.ref(`professors/${profId}/avatar`).set(event.target.result)
+                    .then(() => showMessage('removeMessage', 'Profile picture updated successfully.', 'success'))
+                    .catch(err => showMessage('removeMessage', friendlyError(err), 'error'));
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
     }
 
     // ---------- REMOVE ----------
@@ -804,7 +847,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
                             <strong>${esc(prof.name)} ${isMine(prof.ownerUid) ? '<span class="mine-badge">You</span>' : ''}</strong>
                             <span class="owner-note">Profile created by ${esc(prof.ownerName)}</span>
                         </div>
-                        ${deletableProf ? `<button class="btn-danger" onclick="removeProfessor('${prof.id}')">Delete profile</button>` : ''}
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            ${isMine(prof.ownerUid) ? `<button class="btn-subtle" onclick="changeProfessorAvatar('${prof.id}')">Change Photo</button>` : ''}
+                            ${deletableProf ? `<button class="btn-danger" onclick="removeProfessor('${prof.id}')">Delete profile</button>` : ''}
+                        </div>
                     </div>
                     <div style="display:grid;gap:4px">
                         ${schedHtml}
