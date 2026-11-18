@@ -62,7 +62,6 @@ h3{font-family:'Della Respira',serif;font-weight:400;font-size:1.2rem;color:var(
 .form-group{margin-bottom:0}
 label{display:block;font-weight:500;font-size:0.82rem;color:var(--muted);margin-bottom:6px;letter-spacing:0.01em}
 input,select{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;background:var(--field);font:inherit;font-size:0.92rem;color:var(--ink);transition:border-color 0.15s,box-shadow 0.15s}
-input[type="file"]{padding:8px;cursor:pointer;background:var(--card)}
 input::placeholder{color:#8a978f}
 input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(0,90,54,0.08)}
 input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin-right:8px;vertical-align:-2px}
@@ -153,7 +152,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <div class="panel">
       <h2 id="authTitle" style="text-align:center;margin-bottom:20px">Sign in</h2>
       <div class="form-group" id="nameGroup" style="display:none;margin-bottom:16px;">
-        <label for="authName">Your name</label>
+        <label for="authName">Your full name / Professor name</label>
         <input type="text" id="authName" placeholder="e.g., Mr. Demeke Bayyou">
       </div>
       <div class="form-group" style="margin-bottom:16px;">
@@ -183,16 +182,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
     <!-- TAB 1 -->
     <div id="tab-add" class="tab-content panel active">
-      <h2>Add a professor's schedule</h2>
+      <h2>Add a schedule for <span id="currentProfDisplay" style="color:var(--primary);"></span></h2>
       <div class="grid">
-        <div class="form-group wide">
-          <label for="profName">Professor name</label>
-          <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou" onblur="checkExistingProfessor()">
-        </div>
-        <div class="form-group wide" id="avatarUploadGroup">
-          <label for="profAvatarFile">Profile picture (PNG, JPG) <span id="avatarNote" style="font-weight:400;color:var(--muted)">(Required for new professors)</span></label>
-          <input type="file" id="profAvatarFile" accept="image/*">
-        </div>
         <div class="form-group">
           <label for="schedDay">Day of week</label>
           <select id="schedDay">
@@ -363,7 +354,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
         if (signUpMode) {
             if (!name) {
-                showMessage('authMessage', 'Enter your name. It is shown next to the schedules you add.', 'error');
+                showMessage('authMessage', 'Enter your name.', 'error');
                 return;
             }
             auth.createUserWithEmailAndPassword(email, password)
@@ -371,6 +362,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
                 .then(() => {
                     currentUser = auth.currentUser;
                     document.getElementById('userLabel').innerText = myName();
+                    document.getElementById('currentProfDisplay').innerText = myName();
                     renderAllSchedules();
                 })
                 .catch(err => showMessage('authMessage', err.message, 'error'));
@@ -402,6 +394,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             document.getElementById('appView').style.display = 'block';
             document.getElementById('mastheadStatus').style.display = 'flex';
             document.getElementById('userLabel').innerText = myName();
+            document.getElementById('currentProfDisplay').innerText = myName();
             profRef.on('value', handleProfessorsSnapshot, err => {
                 console.error(err);
                 document.getElementById('allSchedulesContainer').innerHTML =
@@ -493,33 +486,17 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         document.getElementById('absenceTimeSection').style.display = isChecked ? 'grid' : 'none';
     }
 
-    function checkExistingProfessor() {
-        let name = trim(document.getElementById('profName').value);
-        let profIndex = findProfessorIndex(name);
-        let note = document.getElementById('avatarNote');
-        if (profIndex !== -1 && professors[profIndex].avatar) {
-            note.innerText = "(Optional: Professor already has a profile picture. Upload only if you want to change it)";
-        } else {
-            note.innerText = "(Required for new professors)";
-        }
-    }
-
     // ---------- ADD SCHEDULE ----------
     function handleAddSchedule() {
         if (!currentUser) return;
 
-        let name = trim(document.getElementById('profName').value).replace(/\s+/g, ' ');
-        let fileInput = document.getElementById('profAvatarFile');
+        let name = myName();
         let day = document.getElementById('schedDay').value;
         let type = document.getElementById('schedType').value;
         let subject = trim(document.getElementById('schedSubject').value);
         let startTime = convertTime(document.getElementById('startTime').value);
         let endTime = convertTime(document.getElementById('endTime').value);
 
-        if (!name) {
-            showMessage('addMessage', 'Professor name cannot be empty.', 'error');
-            return;
-        }
         if (startTime === -1 || endTime === -1) {
             showMessage('addMessage', 'Invalid time format. Examples: 7:00 AM, 13:00, or 2:30 PM.', 'error');
             return;
@@ -536,11 +513,6 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         let profIndex = findProfessorIndex(name);
         let existing = profIndex !== -1 ? professors[profIndex] : null;
 
-        if (!existing && (!fileInput.files || !fileInput.files[0])) {
-            showMessage('addMessage', 'Please upload a profile picture for this new professor.', 'error');
-            return;
-        }
-
         if (existing) {
             let conflict = existing.schedules.some(sch =>
                 sch.day === day && timeOverlaps(sch.startTime, sch.endTime, startTime, endTime)
@@ -551,59 +523,37 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             }
         }
 
-        const processSave = (avatarDataUrl) => {
-            let newSchedule = {
-                day: day,
-                startTime: startTime,
-                endTime: endTime,
-                isClass: type === 'class',
-                subject: type === 'class' ? subject : 'Vacant',
-                ownerUid: currentUser.uid,
-                ownerName: myName()
-            };
-
-            let id = existing ? existing.id : profKey(name);
-            let finalAvatar = avatarDataUrl || (existing ? existing.avatar : '');
-
-            let profUpdateData = {
-                name: name,
-                avatar: finalAvatar,
-                ownerUid: existing ? existing.ownerUid : currentUser.uid,
-                ownerName: existing ? existing.ownerName : myName()
-            };
-
-            database.ref('professors/' + id).update(profUpdateData).then(() => {
-                let schedId = database.ref('professors/' + id + '/schedules').push().key;
-                return database.ref(`professors/${id}/schedules/${schedId}`).set(newSchedule);
-            }).then(() => {
-                showMessage('addMessage', 'Schedule saved successfully.', 'success');
-                document.getElementById('startTime').value = '';
-                document.getElementById('endTime').value = '';
-                document.getElementById('schedSubject').value = '';
-                document.getElementById('profAvatarFile').value = '';
-                checkExistingProfessor();
-            }).catch(err => showMessage('addMessage', friendlyError(err), 'error'));
+        let newSchedule = {
+            day: day,
+            startTime: startTime,
+            endTime: endTime,
+            isClass: type === 'class',
+            subject: type === 'class' ? subject : 'Vacant',
+            ownerUid: currentUser.uid,
+            ownerName: myName()
         };
 
-        if (fileInput.files && fileInput.files[0]) {
-            let reader = new FileReader();
-            reader.onload = function(e) {
-                processSave(e.target.result);
-            };
-            reader.onerror = function() {
-                showMessage('addMessage', 'Failed to read image file.', 'error');
-            };
-            reader.readAsDataURL(fileInput.files[0]);
-        } else {
-            processSave(null);
-        }
+        let id = existing ? existing.id : profKey(name);
+        let profUpdateData = {
+            name: name,
+            avatar: existing ? existing.avatar : '',
+            ownerUid: currentUser.uid,
+            ownerName: myName()
+        };
+
+        database.ref('professors/' + id).update(profUpdateData).then(() => {
+            let schedId = database.ref('professors/' + id + '/schedules').push().key;
+            return database.ref(`professors/${id}/schedules/${schedId}`).set(newSchedule);
+        }).then(() => {
+            showMessage('addMessage', 'Schedule saved successfully.', 'success');
+            document.getElementById('startTime').value = '';
+            document.getElementById('endTime').value = '';
+            document.getElementById('schedSubject').value = '';
+        }).catch(err => showMessage('addMessage', friendlyError(err), 'error'));
     }
 
     // ---------- CHANGE PROFILE PICTURE ----------
     function changeProfessorAvatar(profId) {
-        let prof = professors.find(p => p.id === profId);
-        if (!prof) return;
-
         let input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
@@ -634,7 +584,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         }
 
         let label = sch.isClass ? sch.subject : 'Vacant';
-        if (!confirm(`Remove this entry for ${prof.name}?\n\n${sch.day} | ${displayTime(sch.startTime)} - ${displayTime(sch.endTime)} | ${label}`)) {
+        if (!confirm(`Remove this entry?\n\n${sch.day} | ${displayTime(sch.startTime)} - ${displayTime(sch.endTime)} | ${label}`)) {
             return;
         }
 
@@ -644,7 +594,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             .then(() => {
                 showMessage('removeMessage', 'Schedule removed.', 'success');
                 if (!othersRemain && isMine(prof.ownerUid)) {
-                    if (confirm(`All schedules for ${prof.name} have been removed.\n\nDelete this professor profile entirely?`)) {
+                    if (confirm(`All schedules have been removed.\n\nDelete your professor profile entirely?`)) {
                         return database.ref('professors/' + profId).remove();
                     }
                 }
@@ -661,10 +611,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         if (!prof) return;
 
         if (!canDeleteProfessor(prof)) {
-            showMessage('removeMessage', 'Only the creator of a professor profile can delete it, and only when every schedule on it is theirs.', 'error');
+            showMessage('removeMessage', 'You can only delete your own profile.', 'error');
             return;
         }
-        if (!confirm(`Delete ${prof.name} and all of their schedules?`)) return;
+        if (!confirm(`Delete your professor profile and all of your schedules?`)) return;
 
         let nulls = {};
         prof.schedules.forEach(s => { nulls[s.id] = null; });
@@ -845,7 +795,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
                         <div class="avatar">${avatarContent}</div>
                         <div class="prof-name">
                             <strong>${esc(prof.name)} ${isMine(prof.ownerUid) ? '<span class="mine-badge">You</span>' : ''}</strong>
-                            <span class="owner-note">Profile created by ${esc(prof.ownerName)}</span>
+                            <span class="owner-note">Profile registry</span>
                         </div>
                         <div style="display:flex;gap:6px;align-items:center;">
                             ${isMine(prof.ownerUid) ? `<button class="btn-subtle" onclick="changeProfessorAvatar('${prof.id}')">Change Photo</button>` : ''}
