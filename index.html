@@ -3,111 +3,125 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FSF (Faculty Substitute Finder)</title>
-<link href="https://fonts.googleapis.com/css2?family=Della+Respira&display=swap" rel="stylesheet">
+<title>FSF — Faculty Substitute Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Della+Respira&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
 :root{
-  --forest:#003d26; --primary:#005A36; --primary-hover:#004227; --accent:#FFC72C; --accent-hover:#e0ac20;
-  --paper:#edf0e8; --card:#fbfcf8; --field:#e6ebe0; --ink:#14201a; --muted:#5d6b62; --line:#d5dccf;
-  --danger:#c62828; --success:#16794a;
+  --bg: #f4f1ea;
+  --surface: #faf8f5;
+  --surface-subtle: #eeede8;
+  --ink: #1e1b18;
+  --muted: #6b645c;
+  --line: #ded8cd;
+  --accent: #b84a39; /* Terracotta */
+  --accent-hover: #9c3b2c;
+  --accent-soft: #fbf1ef;
+  --success: #2c6e49;
+  --success-soft: #edf5ef;
+  --danger: #a12c2f;
+  --danger-soft: #faecec;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--paper);color:var(--ink);padding:16px 16px 48px}
-.container{max-width:920px;margin:0 auto}
+body{margin:0;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--ink);padding:24px 16px 64px;line-height:1.5}
+.container{max-width:860px;margin:0 auto}
 
-/* Masthead: timetable with integrated status badge */
-header{position:relative;overflow:hidden;background:var(--forest);color:#fff;border-radius:28px;padding:34px 32px 64px;margin-bottom:-28px}
-header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:22px;
-  background:repeating-linear-gradient(90deg,var(--accent) 0 38px,transparent 38px 46px,rgba(255,199,44,.45) 46px 70px,transparent 70px 78px,rgba(255,199,44,.18) 78px 96px,transparent 96px 104px)}
+/* Editorial Masthead */
+header{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:36px 40px;margin-bottom:24px;box-shadow:0 4px 20px rgba(30,27,24,0.03);position:relative;overflow:hidden}
+header::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--accent)}
 .header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
-header h1{margin:0;font-family:'Della Respira',serif;font-weight:400;font-size:clamp(1.9rem,5vw,3rem);line-height:1.05;color:var(--accent);max-width:12em}
-header p{margin:10px 0 0;color:#cfe3d7;font-size:.95rem}
+header h1{margin:0;font-family:'Della Respira',serif;font-weight:400;font-size:clamp(2rem,4vw,2.6rem);letter-spacing:-0.02em;color:var(--ink)}
+header p{margin:8px 0 0;font-family:'Newsreader',serif;font-style:italic;color:var(--muted);font-size:1.1rem}
 
-.masthead-status{display:none;align-items:center;gap:10px;background:rgba(0,0,0,.25);padding:8px 16px;border-radius:999px;font-size:.82rem;color:#cfe3d7;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.08)}
-.masthead-status b{color:#fff}
-.masthead-status button{background:rgba(255,255,255,.15);color:#fff;padding:4px 10px;font-size:.75rem;border-radius:999px}
-.masthead-status button:hover{background:rgba(255,255,255,.3)}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2fbf71;box-shadow:0 0 0 3px rgba(47,191,113,.25)}
+.masthead-status{display:none;align-items:center;gap:12px;background:var(--surface-subtle);padding:8px 14px;border-radius:8px;font-size:0.82rem;color:var(--muted);border:1px solid var(--line)}
+.masthead-status b{color:var(--ink);font-weight:600}
+.masthead-status button{background:transparent;color:var(--accent);padding:0;font-size:0.8rem;font-weight:600;border:none;border-radius:0;text-decoration:underline;cursor:pointer}
+.masthead-status button:hover{color:var(--accent-hover);background:transparent}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success)}
 
-.panel{position:relative;background:var(--card);border-radius:28px;padding:28px;box-shadow:0 18px 40px -22px rgba(0,40,24,.45)}
-h2{margin:0 0 20px;font-family:'Della Respira',serif;font-weight:400;font-size:1.7rem;color:var(--forest)}
-h3{font-family:'Della Respira',serif;font-weight:400;font-size:1.3rem;color:var(--forest);margin:0 0 6px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px 40px;box-shadow:0 10px 30px rgba(30,27,24,0.02);margin-bottom:24px}
+h2{margin:0 0 24px;font-family:'Della Respira',serif;font-weight:400;font-size:1.5rem;color:var(--ink);letter-spacing:-0.01em}
+h3{font-family:'Della Respira',serif;font-weight:400;font-size:1.2rem;color:var(--ink);margin:0 0 8px}
 
-/* Tabs */
-.nav-tabs{display:flex;gap:6px;background:var(--forest);padding:6px;border-radius:999px;margin:0 0 18px;position:relative;z-index:1}
-.nav-tabs button{flex:1;background:transparent;color:#bcd3c5;border-radius:999px;padding:12px 10px;font-size:.9rem}
-.nav-tabs button:hover{background:rgba(255,255,255,.08)}
-.nav-tabs button.active{background:var(--accent);color:#2b2200}
+/* Clean Navigation Tabs */
+.nav-tabs{display:flex;gap:4px;background:var(--surface-subtle);padding:4px;border-radius:10px;margin-bottom:24px;border:1px solid var(--line)}
+.nav-tabs button{flex:1;background:transparent;color:var(--muted);border-radius:8px;padding:10px 16px;font-size:0.88rem;font-weight:500;border:none;cursor:pointer;transition:all 0.15s ease}
+.nav-tabs button:hover{color:var(--ink)}
+.nav-tabs button.active{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 2px 8px rgba(30,27,24,0.06)}
 .tab-content{display:none}.tab-content.active{display:block}
 
-/* Fields */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px}
+/* Form Fields */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .grid .wide{grid-column:1/-1}
-.form-group{margin-bottom:16px}.grid .form-group{margin:0}
-label{display:block;font-weight:600;font-size:.82rem;color:var(--muted);margin:0 0 6px 4px}
-input,select{width:100%;padding:13px 16px;border:2px solid transparent;border-radius:14px;background:var(--field);font:inherit;font-size:.95rem;color:var(--ink);transition:background .15s,border-color .15s}
-input::placeholder{color:#8a978f}
-input:focus,select:focus{outline:none;background:#fff;border-color:var(--primary)}
-input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary);margin-right:8px;vertical-align:-3px}
-.check{display:flex;align-items:center;background:var(--field);border-radius:14px;padding:12px 16px;cursor:pointer;color:var(--ink);margin:0}
+.form-group{margin-bottom:0}
+label{display:block;font-weight:500;font-size:0.82rem;color:var(--muted);margin-bottom:6px;letter-spacing:0.01em}
+input,select{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font:inherit;font-size:0.92rem;color:var(--ink);transition:border-color 0.15s,box-shadow 0.15s}
+input[type="file"]{padding:8px;cursor:pointer;background:var(--surface-subtle)}
+input::placeholder{color:#a39e93}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(184,74,57,0.08)}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);margin-right:8px;vertical-align:-2px}
+.check{display:flex;align-items:center;background:var(--surface-subtle);border-radius:8px;padding:12px 14px;cursor:pointer;color:var(--ink);margin:0;border:1px solid var(--line);font-size:0.9rem}
 
-button{font:inherit;font-weight:600;font-size:.92rem;background:var(--primary);color:#fff;border:0;border-radius:999px;padding:13px 26px;cursor:pointer;transition:background .15s,transform .1s}
-button:hover{background:var(--primary-hover)}button:active{transform:scale(.97)}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.btn-primary{background:var(--accent);color:#2b2200;margin-top:22px;padding:14px 30px}
-.btn-primary:hover{background:var(--accent-hover)}
-.btn-secondary{background:#e2e8dc;color:var(--forest)}.btn-secondary:hover{background:#d3dccb}
-.btn-link{background:none;color:var(--primary);padding:0;text-decoration:underline;border-radius:0}
-.btn-link:hover{background:none}
-.btn-danger{background:#fbe4e1;color:var(--danger);padding:7px 14px;font-size:.8rem;flex-shrink:0}
-.btn-danger:hover{background:var(--danger);color:#fff}
+/* Buttons */
+button{font:inherit;font-weight:500;font-size:0.9rem;background:var(--ink);color:var(--surface);border:1px solid var(--ink);border-radius:8px;padding:11px 22px;cursor:pointer;transition:all 0.15s ease}
+button:hover{background:var(--accent);border-color:var(--accent)}
+button:active{transform:translateY(1px)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;margin-top:24px;font-weight:600}
+.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn-secondary{background:var(--surface-subtle);color:var(--ink);border-color:var(--line)}
+.btn-secondary:hover{background:var(--line);border-color:var(--line);color:var(--ink)}
+.btn-link{background:none;color:var(--accent);padding:0;border:none;text-decoration:underline;border-radius:0}
+.btn-link:hover{background:none;color:var(--accent-hover)}
+.btn-danger{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(161,44,47,0.2);padding:6px 12px;font-size:0.78rem;border-radius:6px;flex-shrink:0}
+.btn-danger:hover{background:var(--danger);color:#fff;border-color:var(--danger)}
 
-.alert{padding:12px 16px;border-radius:14px;margin-top:14px;font-size:.9rem}
-.alert-error{background:#fde7e4;color:#9b1c1c}.alert-success{background:#dff3e6;color:#0f5f39}.alert-info{background:#fff3cc;color:#7a5500}
+.alert{padding:12px 16px;border-radius:8px;margin-top:16px;font-size:0.88rem;border:1px solid transparent}
+.alert-error{background:var(--danger-soft);color:var(--danger);border-color:rgba(161,44,47,0.15)}
+.alert-success{background:var(--success-soft);color:var(--success);border-color:rgba(44,110,73,0.15)}
+.alert-info{background:#fdf8ed;color:#8a6d1b;border-color:#f3e5c4}
 
-/* Sign in */
-#authView{max-width:440px;margin:0 auto}
-#authView .panel{margin-top:0}
-#appView{display:none}
-.auth-wrap{margin-top:-28px;position:relative;z-index:1}
+/* Auth View */
+#authView{max-width:420px;margin:40px auto}
+#authView .panel{padding:40px}
 
-/* Output + schedules */
-.output-box{margin-top:22px;max-height:560px;overflow-y:auto}
-.slot{background:#fff;border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:18px;padding:18px;margin-bottom:14px}
-.slot .when{font-size:.85rem;color:var(--muted)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.chip{background:#dff3e6;color:#0f5f39;border-radius:999px;padding:6px 14px;font-size:.85rem;font-weight:600}
-.chip.none{background:#fde7e4;color:#9b1c1c}
-.chat{margin-top:16px;background:var(--paper);border-radius:16px;padding:12px}
-.chat h4{margin:0 0 8px;font-size:.9rem;color:var(--forest)}
-.chat-msgs{max-height:130px;overflow-y:auto;margin-bottom:10px;font-size:.85rem;display:flex;flex-direction:column;gap:6px}
-.chat-msgs div{background:#fff;border-radius:14px;padding:7px 12px;align-self:flex-start;max-width:90%}
-.chat-row{display:flex;gap:8px}.chat-row input{background:#fff;padding:10px 14px}.chat-row button{padding:10px 20px}
+/* Slots & Schedules */
+.output-box{margin-top:24px;max-height:520px;overflow-y:auto}
+.slot{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:20px;margin-bottom:14px}
+.slot .when{font-size:0.82rem;color:var(--muted);font-family:'Newsreader',serif;font-style:italic;margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{background:var(--success-soft);color:var(--success);border:1px solid rgba(44,110,73,0.2);border-radius:6px;padding:4px 10px;font-size:0.8rem;font-weight:500}
+.chip.none{background:var(--danger-soft);color:var(--danger);border-color:rgba(161,44,47,0.2)}
 
-.schedule-list{margin-top:18px;display:grid;gap:16px}
-.prof{background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px}
-.prof-header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
-.avatar{width:46px;height:46px;border-radius:50%;background:var(--forest);color:var(--accent);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1.15rem;flex-shrink:0;overflow:hidden;object-fit:cover;}
+.chat{margin-top:16px;background:var(--surface-subtle);border-radius:8px;padding:14px;border:1px solid var(--line)}
+.chat h4{margin:0 0 8px;font-size:0.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+.chat-msgs{max-height:120px;overflow-y:auto;margin-bottom:10px;font-size:0.85rem;display:flex;flex-direction:column;gap:6px}
+.chat-msgs div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 10px;align-self:flex-start;max-width:90%}
+.chat-row{display:flex;gap:8px}.chat-row input{background:var(--surface);padding:8px 12px;font-size:0.85rem}.chat-row button{padding:8px 16px;font-size:0.85rem}
+
+.schedule-list{margin-top:20px;display:grid;gap:16px}
+.prof{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px}
+.prof-header{display:flex;align-items:center;gap:14px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.avatar{width:42px;height:42px;border-radius:50%;background:var(--surface-subtle);color:var(--ink);border:1px solid var(--line);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1rem;flex-shrink:0;overflow:hidden}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .prof-name{flex:1;min-width:0}
-.prof-name strong{display:block;font-size:1.02rem}
-.owner-note{display:block;font-size:.78rem;color:var(--muted);margin-top:2px}
-.mine-badge{background:var(--accent);color:#2b2200;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:99px;margin-left:8px;vertical-align:1px}
-.schedule-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;font-size:.9rem}
-.schedule-item:nth-child(even){background:#f3f6ef}
-.day{width:46px;font-weight:700;color:var(--forest);flex-shrink:0}
-.time{background:var(--forest);color:#fff;border-radius:999px;padding:3px 12px;font-size:.78rem;white-space:nowrap;flex-shrink:0}
+.prof-name strong{display:block;font-size:1rem;letter-spacing:-0.01em}
+.owner-note{display:block;font-size:0.75rem;color:var(--muted);margin-top:1px}
+.mine-badge{background:var(--accent-soft);color:var(--accent);border:1px solid rgba(184,74,57,0.2);font-size:0.68rem;font-weight:600;padding:1px 6px;border-radius:4px;margin-left:8px;vertical-align:1px}
+.schedule-item{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:6px;font-size:0.88rem}
+.schedule-item:nth-child(even){background:var(--surface-subtle)}
+.day{width:40px;font-weight:600;color:var(--muted);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0}
+.time{background:var(--surface-subtle);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:0.75rem;white-space:nowrap;flex-shrink:0;font-variant-numeric:tabular-nums}
 .what{flex:1;min-width:0}
-.what.vacant{color:var(--muted);font-style:italic}
-.locked{font-size:.78rem;color:var(--muted);flex-shrink:0}
-.empty{text-align:center;color:var(--muted);padding:26px 10px}
+.what.vacant{color:var(--muted);font-style:italic;font-family:'Newsreader',serif}
+.locked{font-size:0.75rem;color:var(--muted);flex-shrink:0}
+.empty{text-align:center;color:var(--muted);padding:32px 10px;font-style:italic;font-family:'Newsreader',serif}
 
 @media(max-width:600px){
-  body{padding:10px 10px 40px}header{padding:26px 22px 50px;border-radius:22px}.panel{padding:20px;border-radius:22px}
-  .grid{grid-template-columns:1fr}.nav-tabs{border-radius:22px;flex-direction:column}
+  body{padding:12px 12px 48px}header{padding:24px 20px}.panel{padding:20px}
+  .grid{grid-template-columns:1fr}.nav-tabs{flex-direction:column}
   .schedule-item{flex-wrap:wrap}.what{flex-basis:100%;order:3}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -119,7 +133,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <div class="header-top">
       <div>
         <h1>Faculty Substitute Finder</h1>
-        <p>FEU Tech web-based scheduling system</p>
+        <p>FEU Institute of Technology scheduling registry</p>
       </div>
       <div id="mastheadStatus" class="masthead-status">
         <span><span class="dot"></span> Signed in as <b id="userLabel"></b></span>
@@ -129,32 +143,32 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   </header>
 
   <!-- LOGIN / SIGN UP -->
-  <div id="authView" class="auth-wrap">
+  <div id="authView">
     <div class="panel">
-      <h2 id="authTitle">Sign in</h2>
-      <div class="form-group" id="nameGroup" style="display:none;">
+      <h2 id="authTitle" style="text-align:center;margin-bottom:20px">Sign in</h2>
+      <div class="form-group" id="nameGroup" style="display:none;margin-bottom:16px;">
         <label for="authName">Your name</label>
         <input type="text" id="authName" placeholder="e.g., Mr. Demeke Bayyou">
       </div>
-      <div class="form-group">
-        <label for="authEmail">Email</label>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label for="authEmail">Email address</label>
         <input type="email" id="authEmail" placeholder="name@fit.edu.ph" autocomplete="username">
       </div>
-      <div class="form-group">
+      <div class="form-group" style="margin-bottom:20px;">
         <label for="authPassword">Password</label>
         <input type="password" id="authPassword" placeholder="At least 6 characters" autocomplete="current-password" onkeydown="if(event.key === 'Enter') handleAuth()">
       </div>
-      <button class="btn-primary" id="authBtn" onclick="handleAuth()" style="margin-top:6px">Sign in</button>
-      <p style="font-size:.9rem;color:var(--muted);margin:18px 0 0">
-        <span id="authSwitchText">No account yet?</span>
-        <button class="btn-link" id="authSwitchBtn" onclick="toggleAuthMode()">Create one</button>
-      </p>
+      <button class="btn-primary" id="authBtn" onclick="handleAuth()" style="width:100%;margin-top:0">Sign in</button>
+      <div style="text-align:center;margin-top:20px">
+        <span id="authSwitchText" style="font-size:0.88rem;color:var(--muted)">No account yet?</span>
+        <button class="btn-link" id="authSwitchBtn" onclick="toggleAuthMode()" style="margin-left:6px;font-size:0.88rem">Create one</button>
+      </div>
       <div id="authMessage"></div>
     </div>
   </div>
 
   <!-- MAIN APP -->
-  <div id="appView" style="margin-top: 28px;">
+  <div id="appView" style="display:none;">
     <div class="nav-tabs">
       <button class="active" onclick="switchTab('tab-add', this)">Add schedule</button>
       <button onclick="switchTab('tab-absence', this)">Record absence</button>
@@ -162,7 +176,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     </div>
 
     <!-- TAB 1 -->
-    <div id="tab-add" class="tab-content active panel">
+    <div id="tab-add" class="tab-content panel active">
       <h2>Add a professor's schedule</h2>
       <div class="grid">
         <div class="form-group">
@@ -170,36 +184,36 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
           <input type="text" id="profName" placeholder="e.g., Mr. Demeke Bayyou">
         </div>
         <div class="form-group">
-          <label for="profAvatar">Profile picture URL (optional)</label>
-          <input type="url" id="profAvatar" placeholder="https://example.com/photo.jpg">
+          <label for="profAvatarFile">Profile picture (PNG, JPG)</label>
+          <input type="file" id="profAvatarFile" accept="image/*">
         </div>
         <div class="form-group">
-          <label for="schedDay">Day</label>
+          <label for="schedDay">Day of week</label>
           <select id="schedDay">
             <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="schedType">Type</label>
+          <label for="schedType">Entry type</label>
           <select id="schedType" onchange="toggleSubjectInput()">
             <option value="class">Class</option>
             <option value="vacant">Vacant</option>
           </select>
         </div>
         <div class="form-group wide" id="subjectGroup">
-          <label for="schedSubject">Subject</label>
+          <label for="schedSubject">Subject title</label>
           <input type="text" id="schedSubject" placeholder="e.g., Computer Programming 1L">
         </div>
         <div class="form-group">
-          <label for="startTime">Starts (7:00 AM, 13:00, 2:30 PM)</label>
+          <label for="startTime">Start time (e.g., 7:00 AM, 13:00)</label>
           <input type="text" id="startTime" placeholder="7:00 AM">
         </div>
         <div class="form-group">
-          <label for="endTime">Ends</label>
+          <label for="endTime">End time</label>
           <input type="text" id="endTime" placeholder="8:30 AM">
         </div>
       </div>
-      <button class="btn-primary" onclick="handleAddSchedule()">Save schedule</button>
+      <button class="btn-primary" onclick="handleAddSchedule()">Save schedule entry</button>
       <div id="addMessage"></div>
     </div>
 
@@ -235,14 +249,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
           <input type="text" id="absenceSubject" placeholder="Computer Programming 1L">
         </div>
       </div>
-      <button class="btn-primary" onclick="handleRecordAbsence()">Find substitutes</button>
+      <button class="btn-primary" onclick="handleRecordAbsence()">Find available substitutes</button>
       <div id="absenceReport" class="output-box" style="display:none;"></div>
     </div>
 
     <!-- TAB 3 -->
     <div id="tab-view" class="tab-content panel">
-      <h2>All schedules</h2>
-      <button onclick="renderAllSchedules()" class="btn-secondary">Refresh</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="margin:0">All schedules</h2>
+        <button onclick="renderAllSchedules()" class="btn-secondary" style="padding:7px 14px;font-size:0.82rem">Refresh list</button>
+      </div>
       <div id="removeMessage"></div>
       <div id="allSchedulesContainer" class="schedule-list">
         <p class="empty">No professors added yet.</p>
@@ -476,7 +492,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         if (!currentUser) return;
 
         let name = trim(document.getElementById('profName').value).replace(/\s+/g, ' ');
-        let avatar = trim(document.getElementById('profAvatar').value);
+        let fileInput = document.getElementById('profAvatarFile');
         let day = document.getElementById('schedDay').value;
         let type = document.getElementById('schedType').value;
         let subject = trim(document.getElementById('schedSubject').value);
@@ -513,40 +529,52 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
             }
         }
 
-        let newSchedule = {
-            day: day,
-            startTime: startTime,
-            endTime: endTime,
-            isClass: type === 'class',
-            subject: type === 'class' ? subject : 'Vacant',
-            ownerUid: currentUser.uid,
-            ownerName: myName()
+        const processSave = (avatarDataUrl) => {
+            let newSchedule = {
+                day: day,
+                startTime: startTime,
+                endTime: endTime,
+                isClass: type === 'class',
+                subject: type === 'class' ? subject : 'Vacant',
+                ownerUid: currentUser.uid,
+                ownerName: myName()
+            };
+
+            let id = existing ? existing.id : profKey(name);
+            let profUpdateData = {
+                name: name,
+                avatar: avatarDataUrl || (existing ? existing.avatar : ''),
+                ownerUid: existing ? existing.ownerUid : currentUser.uid,
+                ownerName: existing ? existing.ownerName : myName()
+            };
+
+            database.ref('professors/' + id).update(profUpdateData).then(() => {
+                let schedId = database.ref('professors/' + id + '/schedules').push().key;
+                return database.ref(`professors/${id}/schedules/${schedId}`).set(newSchedule);
+            }).then(() => {
+                showMessage('addMessage', 'Schedule saved successfully.', 'success');
+                document.getElementById('startTime').value = '';
+                document.getElementById('endTime').value = '';
+                document.getElementById('schedSubject').value = '';
+                document.getElementById('profAvatarFile').value = '';
+            }).catch(err => showMessage('addMessage', friendlyError(err), 'error'));
         };
 
-        let request;
-        let id = existing ? existing.id : profKey(name);
-        let profUpdateData = {
-            name: name,
-            avatar: avatar || (existing ? existing.avatar : ''),
-            ownerUid: existing ? existing.ownerUid : currentUser.uid,
-            ownerName: existing ? existing.ownerName : myName()
-        };
-
-        request = database.ref('professors/' + id).update(profUpdateData).then(() => {
-            let schedId = database.ref('professors/' + id + '/schedules').push().key;
-            return database.ref(`professors/${id}/schedules/${schedId}`).set(newSchedule);
-        });
-
-        request.then(() => {
-            showMessage('addMessage', 'Schedule saved.', 'success');
-            document.getElementById('startTime').value = '';
-            document.getElementById('endTime').value = '';
-            document.getElementById('schedSubject').value = '';
-            document.getElementById('profAvatar').value = '';
-        }).catch(err => showMessage('addMessage', friendlyError(err), 'error'));
+        if (fileInput.files && fileInput.files[0]) {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                processSave(e.target.result);
+            };
+            reader.onerror = function() {
+                showMessage('addMessage', 'Failed to read image file.', 'error');
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            processSave(null);
+        }
     }
 
-    // ---------- REMOVE (OWNER ONLY) ----------
+    // ---------- REMOVE ----------
     function removeSchedule(profId, schedId) {
         let prof = professors.find(p => p.id === profId);
         if (!prof) return;
@@ -652,12 +680,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
             return;
         }
 
-        let html = `<h3>${esc(absentProf.name)} is absent on ${day}</h3>`;
+        let html = `<h3 style="margin-bottom:16px">${esc(absentProf.name)} — Absent on ${day}</h3>`;
         let chatsToAttach = [];
 
         absenceClasses.forEach(absence => {
-            html += `<div class="slot"><strong>${esc(absence.subject)}</strong>
-                <div class="when">${absence.day}, ${displayTime(absence.startTime)} - ${displayTime(absence.endTime)}</div>`;
+            html += `<div class="slot"><strong style="font-family:'Della Respira',serif;font-size:1.05rem">${esc(absence.subject)}</strong>
+                <div class="when">${absence.day}, ${displayTime(absence.startTime)} – ${displayTime(absence.endTime)}</div>`;
 
             let available = [];
             professors.forEach((p, idx) => {
@@ -680,9 +708,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
                 html += `
                     <div class="chat">
                         <h4>Coordinate coverage</h4>
-                        <div class="chat-msgs" id="${chatId}_messages"><p style="color:var(--muted);margin:0">Loading messages...</p></div>
+                        <div class="chat-msgs" id="${chatId}_messages"><p style="color:var(--muted);margin:0;font-style:italic">Loading messages...</p></div>
                         <div class="chat-row">
-                            <input type="text" id="${chatId}_input" placeholder="Message as ${esc(myName())}, e.g. Can you take this class?" onkeydown="if(event.key === 'Enter') sendSubstituteMessage('${chatId}')">
+                            <input type="text" id="${chatId}_input" placeholder="Message as ${esc(myName())}..." onkeydown="if(event.key === 'Enter') sendSubstituteMessage('${chatId}')">
                             <button onclick="sendSubstituteMessage('${chatId}')">Send</button>
                         </div>
                     </div>`;
@@ -702,7 +730,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
                 let msgBox = document.getElementById(`${chatId}_messages`);
                 if (!msgBox) return;
                 if (messages.length === 0) {
-                    msgBox.innerHTML = '<p style="color:var(--muted);margin:0">No messages yet. Send a note to coordinate coverage.</p>';
+                    msgBox.innerHTML = '<p style="color:var(--muted);margin:0;font-style:italic">No messages yet. Send a note to coordinate coverage.</p>';
                 } else {
                     msgBox.innerHTML = messages.map(m => `<div><strong>${esc(m.sender)}:</strong> ${esc(m.text)}</div>`).join('');
                     msgBox.scrollTop = msgBox.scrollHeight;
@@ -734,7 +762,6 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         }
 
         let dayOrder = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 };
-
         let sortedProfs = [...professors].sort((a, b) => a.name.localeCompare(b.name));
 
         container.innerHTML = sortedProfs.map(prof => {
@@ -745,7 +772,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
             });
 
             let avatarContent = prof.avatar 
-                ? `<img src="${esc(prof.avatar)}" alt="${esc(prof.name)}" onerror="this.onerror=null;this.parentNode.innerHTML='${initials(prof.name)}';">`
+                ? `<img src="${prof.avatar}" alt="${esc(prof.name)}" onerror="this.onerror=null;this.parentNode.innerHTML='${initials(prof.name)}';">`
                 : initials(prof.name);
 
             let deletableProf = canDeleteProfessor(prof);
@@ -759,7 +786,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
                     return `
                         <div class="schedule-item">
                             <span class="day">${sch.day.slice(0,3)}</span>
-                            <span class="time">${displayTime(sch.startTime)} - ${displayTime(sch.endTime)}</span>
+                            <span class="time">${displayTime(sch.startTime)} – ${displayTime(sch.endTime)}</span>
                             <span class="what${whatClass}">${label}</span>
                             ${mine ? `<button class="btn-danger" onclick="removeSchedule('${prof.id}', '${sch.id}')">Remove</button>` : `<span class="locked" title="Added by ${esc(sch.ownerName)}">Added by ${esc(sch.ownerName)}</span>`}
                         </div>`;
@@ -775,7 +802,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
                         </div>
                         ${deletableProf ? `<button class="btn-danger" onclick="removeProfessor('${prof.id}')">Delete profile</button>` : ''}
                     </div>
-                    <div style="display:grid;gap:6px">
+                    <div style="display:grid;gap:4px">
                         ${schedHtml}
                     </div>
                 </div>`;
