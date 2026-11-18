@@ -125,12 +125,17 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .locked{font-size:0.75rem;color:var(--muted);flex-shrink:0}
 .empty{text-align:center;color:var(--muted);padding:32px 10px;font-style:italic;font-family:'Newsreader',serif}
 
-/* Modal styling for viewing profiles */
+/* Modal styling for viewing profiles and large photo */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:grid;place-items:center;z-index:1000;padding:16px;backdrop-filter:blur(4px)}
 .modal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:32px;max-width:500px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-height:85vh;overflow-y:auto}
 .modal-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--line)}
-.modal-avatar{width:64px;height:64px;border-radius:50%;background:var(--forest);color:var(--accent);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1.5rem;overflow:hidden;flex-shrink:0;border:2px solid var(--line)}
+.modal-avatar{width:72px;height:72px;border-radius:50%;background:var(--forest);color:var(--accent);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1.6rem;overflow:hidden;flex-shrink:0;border:2px solid var(--line);cursor:pointer;position:relative}
 .modal-avatar img{width:100%;height:100%;object-fit:cover}
+.modal-avatar:hover::after{content:"🔍";position:absolute;inset:0;background:rgba(0,0,0,0.3);display:grid;place-items:center;font-size:1.2rem}
+
+/* Fullscreen Photo Lightbox */
+.lightbox-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);display:grid;place-items:center;z-index:2000;padding:20px;cursor:zoom-out}
+.lightbox-content{max-width:90vw;max-height:90vh;border-radius:12px;object-fit:contain;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
 
 @media(max-width:600px){
   body{padding:12px 12px 48px}header{padding:24px 20px}.panel{padding:20px}
@@ -278,8 +283,9 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </div>
 </div>
 
-<!-- MODAL CONTAINER -->
+<!-- MODAL & LIGHTBOX CONTAINERS -->
 <div id="modalContainer"></div>
+<div id="lightboxContainer"></div>
 
 <script>
     const firebaseConfig = {
@@ -611,7 +617,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         input.click();
     }
 
-    // ---------- VIEW PROFILE MODAL ----------
+    // ---------- VIEW PROFILE MODAL & PHOTO LIGHTBOX ----------
     function viewProfileModal(profId) {
         let prof = professors.find(p => p.id === profId);
         if (!prof) return;
@@ -624,7 +630,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         });
 
         let avatarContent = prof.avatar 
-            ? `<img src="${prof.avatar}" alt="${esc(prof.name)}" onerror="this.onerror=null;this.parentNode.innerHTML='${initials(prof.name)}';">`
+            ? `<img src="${prof.avatar}" alt="${esc(prof.name)}" onclick="openLightbox('${esc(prof.avatar)}')">`
             : initials(prof.name);
 
         let schedHtml = sortedScheds.length === 0 
@@ -644,10 +650,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             <div class="modal-overlay" onclick="closeModal(event)">
                 <div class="modal">
                     <div class="modal-header">
-                        <div class="modal-avatar">${avatarContent}</div>
+                        <div class="modal-avatar" ${prof.avatar ? `title="Click photo to enlarge"` : ''}>${avatarContent}</div>
                         <div>
                             <h3 style="margin:0">${esc(prof.name)}</h3>
-                            <span style="font-size:0.82rem;color:var(--muted)">Professor Schedule Profile</span>
+                            <span style="font-size:0.82rem;color:var(--muted)">Professor Schedule Profile ${prof.avatar ? '(Click photo to view full)' : ''}</span>
                         </div>
                     </div>
                     <div style="display:grid;gap:4px;margin-bottom:20px">
@@ -657,6 +663,14 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
                 </div>
             </div>`;
         document.getElementById('modalContainer').innerHTML = modalHTML;
+    }
+
+    function openLightbox(imgSrc) {
+        let lightboxHTML = `
+            <div class="lightbox-overlay" onclick="document.getElementById('lightboxContainer').innerHTML=''">
+                <img src="${imgSrc}" class="lightbox-content" alt="Enlarged profile picture">
+            </div>`;
+        document.getElementById('lightboxContainer').innerHTML = lightboxHTML;
     }
 
     function closeModal(e) {
