@@ -650,7 +650,6 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
             return;
         }
 
-        // Create a unique, sorted bidirectional chat ID so only these two professors share the thread
         let sortedNames = [myProfName, substituteName].sort();
         let chatId = 'private_chat_' + profKey(sortedNames[0]) + '_' + profKey(sortedNames[1]);
 
