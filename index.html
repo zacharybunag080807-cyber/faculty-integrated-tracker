@@ -62,6 +62,7 @@ h3{font-family:'Della Respira',serif;font-weight:400;font-size:1.2rem;color:var(
 .form-group{margin-bottom:0}
 label{display:block;font-weight:500;font-size:0.82rem;color:var(--muted);margin-bottom:6px;letter-spacing:0.01em}
 input,select{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:8px;background:var(--field);font:inherit;font-size:0.92rem;color:var(--ink);transition:border-color 0.15s,box-shadow 0.15s}
+input[type="file"]{padding:8px;cursor:pointer;background:var(--card)}
 input::placeholder{color:#8a978f}
 input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(0,90,54,0.08)}
 input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin-right:8px;vertical-align:-2px}
@@ -151,9 +152,15 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div id="authView">
     <div class="panel">
       <h2 id="authTitle" style="text-align:center;margin-bottom:20px">Sign in</h2>
-      <div class="form-group" id="nameGroup" style="display:none;margin-bottom:16px;">
-        <label for="authName">Your full name / Professor name</label>
-        <input type="text" id="authName" placeholder="e.g., Mr. Demeke Bayyou">
+      <div id="signUpFields" style="display:none;">
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="authName">Your full name / Professor name</label>
+          <input type="text" id="authName" placeholder="e.g., Mr. Demeke Bayyou">
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="authAvatarFile">Profile picture <span style="font-weight:400;color:var(--muted)">(Optional)</span></label>
+          <input type="file" id="authAvatarFile" accept="image/*">
+        </div>
       </div>
       <div class="form-group" style="margin-bottom:16px;">
         <label for="authEmail">Email address</label>
@@ -336,7 +343,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         signUpMode = !signUpMode;
         document.getElementById('authTitle').innerText = signUpMode ? 'Create account' : 'Sign in';
         document.getElementById('authBtn').innerText = signUpMode ? 'Create account' : 'Sign in';
-        document.getElementById('nameGroup').style.display = signUpMode ? 'block' : 'none';
+        document.getElementById('signUpFields').style.display = signUpMode ? 'block' : 'none';
         document.getElementById('authSwitchText').innerText = signUpMode ? 'Already have an account?' : 'No account yet?';
         document.getElementById('authSwitchBtn').innerText = signUpMode ? 'Sign in' : 'Create one';
         document.getElementById('authPassword').autocomplete = signUpMode ? 'new-password' : 'current-password';
@@ -346,6 +353,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         let email = trim(document.getElementById('authEmail').value);
         let password = document.getElementById('authPassword').value;
         let name = trim(document.getElementById('authName').value);
+        let fileInput = document.getElementById('authAvatarFile');
 
         if (!email || !password) {
             showMessage('authMessage', 'Enter your email and password.', 'error');
@@ -357,15 +365,38 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
                 showMessage('authMessage', 'Enter your name.', 'error');
                 return;
             }
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(cred => cred.user.updateProfile({ displayName: name }))
-                .then(() => {
-                    currentUser = auth.currentUser;
-                    document.getElementById('userLabel').innerText = myName();
-                    document.getElementById('currentProfDisplay').innerText = myName();
-                    renderAllSchedules();
-                })
-                .catch(err => showMessage('authMessage', err.message, 'error'));
+
+            const completeSignUp = (avatarUrl) => {
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then(cred => cred.user.updateProfile({ displayName: name }))
+                    .then(() => {
+                        currentUser = auth.currentUser;
+                        document.getElementById('userLabel').innerText = myName();
+                        document.getElementById('currentProfDisplay').innerText = myName();
+
+                        // Create initial profile record with optional avatar
+                        let id = profKey(name);
+                        return database.ref('professors/' + id).update({
+                            name: name,
+                            avatar: avatarUrl || '',
+                            ownerUid: currentUser.uid,
+                            ownerName: name
+                        });
+                    })
+                    .then(() => {
+                        renderAllSchedules();
+                    })
+                    .catch(err => showMessage('authMessage', err.message, 'error'));
+            };
+
+            if (fileInput.files && fileInput.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) { completeSignUp(e.target.result); };
+                reader.onerror = function() { completeSignUp(null); };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                completeSignUp(null);
+            }
         } else {
             auth.signInWithEmailAndPassword(email, password)
                 .catch(err => showMessage('authMessage', err.message, 'error'));
