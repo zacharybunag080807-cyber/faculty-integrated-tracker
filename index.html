@@ -125,6 +125,13 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .locked{font-size:0.75rem;color:var(--muted);flex-shrink:0}
 .empty{text-align:center;color:var(--muted);padding:32px 10px;font-style:italic;font-family:'Newsreader',serif}
 
+/* Modal styling for viewing profiles */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:grid;place-items:center;z-index:1000;padding:16px;backdrop-filter:blur(4px)}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:32px;max-width:500px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.2);max-height:85vh;overflow-y:auto}
+.modal-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.modal-avatar{width:64px;height:64px;border-radius:50%;background:var(--forest);color:var(--accent);display:grid;place-items:center;font-family:'Della Respira',serif;font-size:1.5rem;overflow:hidden;flex-shrink:0;border:2px solid var(--line)}
+.modal-avatar img{width:100%;height:100%;object-fit:cover}
+
 @media(max-width:600px){
   body{padding:12px 12px 48px}header{padding:24px 20px}.panel{padding:20px}
   .grid{grid-template-columns:1fr}.nav-tabs{flex-direction:column}
@@ -271,6 +278,9 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </div>
 </div>
 
+<!-- MODAL CONTAINER -->
+<div id="modalContainer"></div>
+
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyD7_5L88hcCuLf_v9CziBl2aaFiVOR-DG0",
@@ -374,7 +384,6 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
                         document.getElementById('userLabel').innerText = myName();
                         document.getElementById('currentProfDisplay').innerText = myName();
 
-                        // Create initial profile record with optional avatar
                         let id = profKey(name);
                         return database.ref('professors/' + id).update({
                             name: name,
@@ -602,6 +611,60 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         input.click();
     }
 
+    // ---------- VIEW PROFILE MODAL ----------
+    function viewProfileModal(profId) {
+        let prof = professors.find(p => p.id === profId);
+        if (!prof) return;
+
+        let dayOrder = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 };
+        let sortedScheds = [...prof.schedules].sort((a, b) => {
+            let dDiff = (dayOrder[a.day] || 8) - (dayOrder[b.day] || 8);
+            if (dDiff !== 0) return dDiff;
+            return a.startTime - b.startTime;
+        });
+
+        let avatarContent = prof.avatar 
+            ? `<img src="${prof.avatar}" alt="${esc(prof.name)}" onerror="this.onerror=null;this.parentNode.innerHTML='${initials(prof.name)}';">`
+            : initials(prof.name);
+
+        let schedHtml = sortedScheds.length === 0 
+            ? '<p class="empty" style="padding:10px">No schedules listed yet.</p>'
+            : sortedScheds.map(sch => {
+                let label = sch.isClass ? esc(sch.subject) : 'Vacant';
+                let whatClass = sch.isClass ? '' : ' vacant';
+                return `
+                    <div class="schedule-item">
+                        <span class="day">${sch.day.slice(0,3)}</span>
+                        <span class="time">${displayTime(sch.startTime)} – ${displayTime(sch.endTime)}</span>
+                        <span class="what${whatClass}">${label}</span>
+                    </div>`;
+            }).join('');
+
+        let modalHTML = `
+            <div class="modal-overlay" onclick="closeModal(event)">
+                <div class="modal">
+                    <div class="modal-header">
+                        <div class="modal-avatar">${avatarContent}</div>
+                        <div>
+                            <h3 style="margin:0">${esc(prof.name)}</h3>
+                            <span style="font-size:0.82rem;color:var(--muted)">Professor Schedule Profile</span>
+                        </div>
+                    </div>
+                    <div style="display:grid;gap:4px;margin-bottom:20px">
+                        ${schedHtml}
+                    </div>
+                    <button class="btn-secondary" style="width:100%" onclick="document.getElementById('modalContainer').innerHTML=''">Close Profile</button>
+                </div>
+            </div>`;
+        document.getElementById('modalContainer').innerHTML = modalHTML;
+    }
+
+    function closeModal(e) {
+        if (e.target.classList.contains('modal-overlay')) {
+            document.getElementById('modalContainer').innerHTML = '';
+        }
+    }
+
     // ---------- REMOVE ----------
     function removeSchedule(profId, schedId) {
         let prof = professors.find(p => p.id === profId);
@@ -826,9 +889,10 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
                         <div class="avatar">${avatarContent}</div>
                         <div class="prof-name">
                             <strong>${esc(prof.name)} ${isMine(prof.ownerUid) ? '<span class="mine-badge">You</span>' : ''}</strong>
-                            <span class="owner-note">Profile registry</span>
+                            <span class="owner-note">Professor</span>
                         </div>
-                        <div style="display:flex;gap:6px;align-items:center;">
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                            <button class="btn-subtle" onclick="viewProfileModal('${prof.id}')">View Profile</button>
                             ${isMine(prof.ownerUid) ? `<button class="btn-subtle" onclick="changeProfessorAvatar('${prof.id}')">Change Photo</button>` : ''}
                             ${deletableProf ? `<button class="btn-danger" onclick="removeProfessor('${prof.id}')">Delete profile</button>` : ''}
                         </div>
